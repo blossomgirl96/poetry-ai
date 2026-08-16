@@ -45,7 +45,7 @@ QUESTIONS = [
     },
     {
         "key": "feeling",
-        "prompt": "How do you want the reader to feel at the end?",
+        "prompt": "How do you want the reader to feel reading this poem?",
         "hint": "e.g. ached-out relief, quiet dread, wanting to call someone",
         "required": True,
     },
