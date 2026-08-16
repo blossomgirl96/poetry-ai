@@ -19,45 +19,47 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 MODEL = "claude-opus-5"
+# Opus 5 thinks by default, and thinking counts against max_tokens alongside the
+# poem itself. Rhyme and meter burn a lot of it, so leave plenty of headroom —
+# we stream, so a large ceiling costs nothing when it goes unused.
+MAX_TOKENS = 64000
 
 QUESTIONS = [
     {
         "key": "subject",
-        "prompt": "What's the poem about?",
-        "hint": "a person, a place, a moment, a feeling — anything",
+        "prompt": "Who's this poem about?",
+        "hint": "a friend, family member, partner — anyone",
         "required": True,
     },
     {
-        "key": "image",
-        "prompt": "One specific image you can't shake?",
-        "hint": "something you can see, hear, smell, or touch",
+        "key": "favourites",
+        "prompt": "What are your favourite things about them?",
+        "hint": "the small specific ones beat the big general ones",
+        "required": True,
+    },
+    {
+        "key": "memory",
+        "prompt": "Any shared memories or stories that resonate with you in this moment?",
+        "hint": "whichever one is on your mind right now",
         "required": True,
     },
     {
         "key": "feeling",
-        "prompt": "What should the reader feel at the end?",
+        "prompt": "How do you want the reader to feel at the end?",
         "hint": "e.g. ached-out relief, quiet dread, wanting to call someone",
-        "required": False,
-    },
-    {
-        "key": "audience",
-        "prompt": "Who is it for?",
-        "hint": "press Enter to skip",
-        "required": False,
+        "required": True,
     },
     {
         "key": "form",
-        "prompt": "Form? [1] free verse  [2] rhyming  [3] haiku  [4] sonnet",
-        "hint": "Enter for free verse",
-        "required": False,
+        "prompt": "Form? [1] free verse  [2] rhyming",
+        "hint": "type 1 or 2",
+        "required": True,
     },
 ]
 
 FORMS = {
     "1": "free verse",
     "2": "a rhyming poem with a consistent scheme",
-    "3": "a haiku (5-7-5)",
-    "4": "a sonnet (14 lines, iambic pentameter)",
     "": "free verse",
 }
 
@@ -65,7 +67,8 @@ SYSTEM = """You are a poet. You write poems that earn their images instead of \
 decorating with them.
 
 Rules:
-- Use the person's specific image. Don't swap it for a prettier one.
+- Use the details they gave you — the things they love, and any memory they told.
+  Don't swap them for prettier ones of your own.
 - Concrete over abstract. Show the thing, don't name the emotion.
 - No greeting-card lines, no "in the end", no forced profundity.
 - Vary line length. Let the poem breathe where it needs to.
@@ -92,13 +95,13 @@ def build_prompt(answers):
     form = FORMS.get(answers["form"], answers["form"] or "free verse")
     lines = [
         f"Write a poem about: {answers['subject']}",
-        f"It must include this image: {answers['image']}",
+        f"Their favourite things about the subject: {answers['favourites']}",
         f"Form: {form}",
     ]
+    if answers["memory"]:
+        lines.append(f"A shared memory that matters to them right now: {answers['memory']}")
     if answers["feeling"]:
         lines.append(f"The reader should end up feeling: {answers['feeling']}")
-    if answers["audience"]:
-        lines.append(f"It is for: {answers['audience']}")
     return "\n".join(lines)
 
 
@@ -162,7 +165,7 @@ def main():
     try:
         with client.messages.stream(
             model=MODEL,
-            max_tokens=4000,
+            max_tokens=MAX_TOKENS,
             system=SYSTEM,
             messages=[{"role": "user", "content": user_prompt}],
         ) as stream:
@@ -172,12 +175,21 @@ def main():
             final = stream.get_final_message()
     except anthropic.APIError as e:
         sys.exit(f"\nAPI error: {e}")
+    except KeyboardInterrupt:
+        sys.exit("\nOk — nothing written.")
 
     if final.stop_reason == "refusal":
         sys.exit("\nClaude declined to write this one.")
 
     poem = "".join(poem_parts).strip()
     print("\n\033[2m" + "─" * 50 + "\033[0m")
+
+    if final.stop_reason == "max_tokens":
+        print("\n\033[1mThat one hit the token ceiling before it finished.\033[0m")
+        print(f"\033[2mRaise MAX_TOKENS (currently {MAX_TOKENS:,}) or try again.\033[0m")
+
+    if not poem:
+        sys.exit("\nNothing to save — no poem text came back.")
 
     try:
         save = input("\nSave it? [y/N] ").strip().lower()
