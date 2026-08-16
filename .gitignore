@@ -1,0 +1,5 @@
+.env
+.venv/
+poems/
+__pycache__/
+*.pyc
