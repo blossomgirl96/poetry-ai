@@ -1,6 +1,6 @@
 # poetry-ai
 
-A CLI that asks you five questions and writes you a poem.
+A CLI that asks you four questions and writes you a free-verse poem.
 
 ## Setup (once)
 
@@ -22,13 +22,13 @@ reads your key from `.env` and starts the questions.
 
 ## How it works
 
-`poem.py` is one file, ~205 lines:
+`poem.py` is one file, ~195 lines:
 
 1. **`.env` load** — `python-dotenv` reads the key, resolved relative to the script
    so `./run.sh` works from any directory.
 2. **Fixed question set** (`QUESTIONS`) — who it's about, favourite things about them,
-   a shared memory, target feeling, form. All five are required; blank answers are
-   re-prompted.
+   a shared memory, target feeling. All four are required; blank answers are
+   re-prompted. Form isn't asked: every poem is free verse (`FORM`).
 3. **Prompt assembly** (`build_prompt`) — folds the answers into a single user turn.
    The craft rules live in `SYSTEM`, separate from the answers.
 4. **One streaming call** to `claude-opus-5`, printed token by token. Ctrl-C bails
@@ -38,10 +38,11 @@ reads your key from `.env` and starts the questions.
 ### On `MAX_TOKENS`
 
 Opus 5 thinks by default, and thinking spends the same `max_tokens` budget as the
-poem. Rhyme and meter burn a lot of it, so `MAX_TOKENS` is set to 64,000 — the call
-streams, so a high ceiling costs nothing when it goes unused. If a poem ever does hit
-the ceiling, the CLI says so instead of silently saving a truncated one, and a run
-that produces no text at all is never offered for saving.
+poem — a short poem can still spend a lot of budget getting there. `MAX_TOKENS` is
+set to 64,000, and the call streams, so a high ceiling costs nothing when it goes
+unused. If a poem ever does hit the ceiling, the CLI says so instead of silently
+saving a truncated one, and a run that produces no text at all is never offered for
+saving.
 
 ## What gets saved
 
@@ -76,7 +77,7 @@ Edit `SYSTEM`, run the same inputs again, and the hash changes — that's your A
 |---|---|
 | The questions | `QUESTIONS` list in `poem.py` |
 | Poem quality / voice | `SYSTEM` string — this is the main lever |
-| Form options | `FORMS` dict — and the `[1] … [2] …` text in the `form` question |
+| The form every poem takes | `FORM` string |
 | Model or length | `MODEL`, `MAX_TOKENS` |
 
 ## Files
@@ -94,7 +95,7 @@ Edit `SYSTEM`, run the same inputs again, and the hash changes — that's your A
 - **Compare prompt versions properly** — the sidecars already record which `SYSTEM`
   produced each poem, but nothing scores them. A rating prompt would turn that record
   into an actual A/B.
-- **AI-generated follow-ups** — keep Q1 fixed, have Claude generate Q2–Q5 from the
+- **AI-generated follow-ups** — keep Q1 fixed, have Claude generate Q2–Q4 from the
   answers. More magical, more latency, harder to debug.
 - **Web wrapper** — a small FastAPI/Flask endpoint around `build_prompt` + the
   streaming call, so the whole thing is shareable.

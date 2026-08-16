@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ask five questions, write one poem.
+"""Ask four questions, write one poem.
 
 Usage:
     ./run.sh            (reads your key from .env)
@@ -20,8 +20,8 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 MODEL = "claude-opus-5"
 # Opus 5 thinks by default, and thinking counts against max_tokens alongside the
-# poem itself. Rhyme and meter burn a lot of it, so leave plenty of headroom —
-# we stream, so a large ceiling costs nothing when it goes unused.
+# poem itself — a short poem can still spend a lot of budget getting there. We
+# stream, so a large ceiling costs nothing when it goes unused.
 MAX_TOKENS = 64000
 
 QUESTIONS = [
@@ -49,19 +49,9 @@ QUESTIONS = [
         "hint": "e.g. ached-out relief, quiet dread, wanting to call someone",
         "required": True,
     },
-    {
-        "key": "form",
-        "prompt": "Form? [1] free verse  [2] rhyming",
-        "hint": "type 1 or 2",
-        "required": True,
-    },
 ]
 
-FORMS = {
-    "1": "free verse",
-    "2": "a rhyming poem with a consistent scheme",
-    "": "free verse",
-}
+FORM = "free verse"
 
 SYSTEM = """You are a poet. You write poems that earn their images instead of \
 decorating with them.
@@ -92,11 +82,10 @@ def ask(question):
 
 
 def build_prompt(answers):
-    form = FORMS.get(answers["form"], answers["form"] or "free verse")
     lines = [
         f"Write a poem about: {answers['subject']}",
         f"Their favourite things about the subject: {answers['favourites']}",
-        f"Form: {form}",
+        f"Form: {FORM}",
     ]
     if answers["memory"]:
         lines.append(f"A shared memory that matters to them right now: {answers['memory']}")
@@ -125,7 +114,7 @@ def save_run(answers, user_prompt, poem, message):
             {"key": q["key"], "question": q["prompt"], "answer": answers[q["key"]]}
             for q in QUESTIONS
         ],
-        "resolved_form": FORMS.get(answers["form"], answers["form"] or "free verse"),
+        "resolved_form": FORM,
         "user_prompt": user_prompt,
         "poem": poem,
         "stop_reason": message.stop_reason,
@@ -151,7 +140,7 @@ def main():
             "     get one at https://console.anthropic.com/settings/keys"
         )
 
-    print("\n\033[1mFive questions, then a poem.\033[0m")
+    print("\n\033[1mFour questions, then a poem.\033[0m")
     print("\033[2mCtrl-C to bail at any point.\033[0m")
 
     answers = {q["key"]: ask(q) for q in QUESTIONS}
