@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mr. Meter</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --ink: #1f1c18;
+    --muted: #7a7167;
+    --rule: #e4ddd2;
+    --bubble: #fff;
+    --accent: #8a5a34;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16140f; --ink: #ece6dc; --muted: #9a9086;
+      --rule: #2e2a23; --bubble: #201d17; --accent: #d09a6a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header {
+    padding: 14px 20px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 10px; flex: none;
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+  header span { color: var(--muted); font-size: 13px; }
+  #log { flex: 1; overflow-y: auto; padding: 24px 20px 8px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .msg {
+    max-width: 78%; padding: 10px 14px; border-radius: 14px;
+    margin-bottom: 14px; white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .msg.bot { background: var(--bubble); border: 1px solid var(--rule); border-bottom-left-radius: 4px; }
+  .msg.me  { background: var(--accent); color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
+  .poem {
+    margin: 26px 0; padding: 22px 0; border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    font-family: Georgia, "Iowan Old Style", serif; white-space: pre-wrap;
+    font-size: 17px; line-height: 1.7;
+  }
+  .poem h2 { font-size: 19px; margin: 0 0 .8em; font-weight: 600; }
+  .note { color: var(--muted); font-size: 13px; margin: 6px 0 18px; }
+  .note.warn { color: var(--accent); }
+  .dots::after { content: "..."; animation: d 1.2s steps(4, end) infinite; }
+  @keyframes d { 0% { content: "" } 25% { content: "." } 50% { content: ".." } 75% { content: "..." } }
+  footer { flex: none; border-top: 1px solid var(--rule); padding: 12px 20px 18px; }
+  .row { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+  textarea {
+    flex: 1; resize: none; font: inherit; color: inherit; background: var(--bubble);
+    border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px;
+    max-height: 140px; min-height: 42px;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button {
+    font: inherit; border: 1px solid var(--rule); background: var(--bubble); color: inherit;
+    border-radius: 10px; padding: 10px 14px; cursor: pointer; white-space: nowrap;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+</style>
+</head>
+<body>
+<header><h1>Mr. Meter</h1><span>a poem for someone you like</span></header>
+
+<div id="log"><div class="wrap" id="wrap"></div></div>
+
+<footer>
+  <div class="row">
+    <textarea id="input" rows="1" placeholder="Say hello..." disabled></textarea>
+    <button id="send" class="primary" disabled>Send</button>
+    <button id="write" title="Skip ahead and write the poem now" disabled>Write it now</button>
+  </div>
+</footer>
+
+<script>
+const wrap = document.getElementById('wrap');
+const log = document.getElementById('log');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const writeBtn = document.getElementById('write');
+let sessionId = null, busy = false, done = false;
+
+const atBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+function scroll(was) { if (was) log.scrollTop = log.scrollHeight; }
+
+function bubble(cls, text = '') {
+  const was = atBottom();
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  el.textContent = text;
+  wrap.appendChild(el);
+  scroll(was);
+  return el;
+}
+
+function note(text, warn) {
+  const el = document.createElement('div');
+  el.className = 'note' + (warn ? ' warn' : '');
+  el.textContent = text;
+  wrap.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+function setBusy(on) {
+  busy = on;
+  const off = on || done;
+  input.disabled = off;
+  sendBtn.disabled = off;
+  writeBtn.disabled = off || !sessionId;
+  if (!off) input.focus();
+}
+
+// Minimal SSE frame parser. EventSource can't POST and auto-reconnects on
+// close, which would re-fire the turn — so we read the body ourselves.
+async function stream(url, body, onEvent) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 404) { onEvent({ type: 'expired' }); return; }
+  if (!res.ok) { onEvent({ type: 'error', message: 'Server error ' + res.status }); return; }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { value, done: fin } = await reader.read();
+    if (fin) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf('\n\n')) !== -1) {
+      const frame = buf.slice(0, i).trim();
+      buf = buf.slice(i + 2);
+      if (frame.startsWith('data:')) onEvent(JSON.parse(frame.slice(5).trim()));
+    }
+  }
+}
+
+async function turn(url, body) {
+  setBusy(true);
+  let bot = null, poemEl = null, thinking = null;
+
+  try {
+    await stream(url, body, (ev) => {
+      const was = atBottom();
+      switch (ev.type) {
+        case 'chat_start':
+          thinking = bubble('bot');
+          thinking.innerHTML = '<span class="dots"></span>';
+          break;
+        case 'chat_delta':
+          if (thinking) { thinking.textContent = ''; bot = thinking; thinking = null; }
+          bot.textContent += ev.text;
+          scroll(was);
+          break;
+        case 'chat_end':
+          if (thinking) { thinking.remove(); thinking = null; }
+          break;
+        case 'poem_start':
+          poemEl = document.createElement('div');
+          poemEl.className = 'poem';
+          poemEl.textContent = '';
+          wrap.appendChild(poemEl);
+          scroll(was);
+          break;
+        case 'poem_delta':
+          poemEl.textContent += ev.text;
+          scroll(was);
+          break;
+        case 'poem_end': {
+          // SYSTEM guarantees "title, blank line, poem" — split once the stream
+          // has closed rather than fighting token boundaries mid-flight.
+          const raw = poemEl.textContent;
+          const br = raw.indexOf('\n\n');
+          if (br > 0) {
+            const h = document.createElement('h2');
+            h.textContent = raw.slice(0, br).trim();
+            poemEl.textContent = raw.slice(br + 2);
+            poemEl.prepend(h);
+          }
+          if (ev.stop_reason === 'max_tokens') {
+            note('That one hit the token ceiling before it finished.', true);
+          }
+          note('Saved  ' + ev.poem_path);
+          done = true;
+          finish();
+          break;
+        }
+        case 'expired':
+          note('That conversation expired — start a new one.', true);
+          done = true;
+          finish();
+          break;
+        case 'error':
+          note(ev.message, true);
+          break;
+      }
+    });
+  } catch (e) {
+    note('Lost the connection: ' + e.message, true);
+  }
+  setBusy(false);
+}
+
+function finish() {
+  const row = document.querySelector('.row');
+  row.innerHTML = '';
+  const copy = document.createElement('button');
+  copy.textContent = 'Copy poem';
+  copy.onclick = () => {
+    const p = document.querySelector('.poem');
+    if (p) navigator.clipboard.writeText(p.innerText).then(() => (copy.textContent = 'Copied'));
+  };
+  const again = document.createElement('button');
+  again.className = 'primary';
+  again.textContent = 'New poem';
+  again.onclick = () => location.reload();
+  row.append(copy, again);
+}
+
+function send() {
+  const text = input.value.trim();
+  if (!text || busy) return;
+  bubble('me', text);
+  input.value = '';
+  input.style.height = 'auto';
+  turn('/turn', { session_id: sessionId, message: text });
+}
+
+sendBtn.onclick = send;
+writeBtn.onclick = () => { if (!busy) turn('/write', { session_id: sessionId }); };
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+
+(async function start() {
+  const res = await fetch('/session', { method: 'POST' });
+  sessionId = (await res.json()).session_id;
+  input.placeholder = 'Type a message...';
+  await turn('/turn', { session_id: sessionId, message: '' });  // greeting
+})();
+</script>
+</body>
+</html>

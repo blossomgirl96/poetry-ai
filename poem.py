@@ -53,6 +53,10 @@ QUESTIONS = [
 
 FORM = "free verse"
 
+# Canonical question text, so a chat-mode sidecar records the same wording the
+# CLI would have asked even though nobody asked it out loud.
+QUESTION_TEXT = {q["key"]: q["prompt"] for q in QUESTIONS}
+
 SYSTEM = """You are a poet. You write poems that earn their images instead of \
 decorating with them.
 
@@ -81,24 +85,85 @@ def ask(question):
         print("\033[2m(this one's needed)\033[0m")
 
 
-def build_prompt(answers):
+def build_prompt(answers, transcript=None):
+    """Fold the answers into one user turn.
+
+    `transcript` is an optional list of {"role", "content"} from a chat session,
+    appended as labeled source material so the poet gets the person's own
+    phrasing alongside the distilled slots.
+    """
     lines = [
         f"Write a poem about: {answers['subject']}",
         f"Their favourite things about the subject: {answers['favourites']}",
         f"Form: {FORM}",
     ]
-    if answers["memory"]:
+    if answers.get("memory"):
         lines.append(f"A shared memory that matters to them right now: {answers['memory']}")
-    if answers["feeling"]:
+    if answers.get("feeling"):
         lines.append(f"The reader should end up feeling: {answers['feeling']}")
+
+    if transcript:
+        lines.append("")
+        lines.append("--- The conversation that produced this, verbatim ---")
+        lines.append(
+            "Only the person's words are source material. The interviewer's lines "
+            "are context, and anything the interviewer said about themselves is "
+            "not about the subject."
+        )
+        lines.append("")
+        for turn in transcript:
+            # The persona is labeled generically so no character leaks into the
+            # poet's context.
+            if turn["role"] == "user":
+                lines.append(f"Them: {turn['content']}")
+            elif turn["role"] == "assistant":
+                lines.append(f"Interviewer: {turn['content']}")
     return "\n".join(lines)
 
 
-def save_run(answers, user_prompt, poem, message):
-    """Write the poem, plus a JSON sidecar holding everything that produced it."""
+def iter_poem(client, user_prompt):
+    """Stream one poem. Yields ("text", chunk) then exactly one ("final", message).
+
+    Shared by the CLI (which prints) and the web app (which frames as SSE).
+    """
+    with client.messages.stream(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": user_prompt}],
+    ) as stream:
+        for text in stream.text_stream:
+            yield "text", text
+        yield "final", stream.get_final_message()
+
+
+def save_run(
+    answers,
+    user_prompt,
+    poem,
+    message,
+    *,
+    mode="cli",
+    transcript=None,
+    persona_prompt=None,
+    chat_model=None,
+    chat_usage=None,
+):
+    """Write the poem, plus a JSON sidecar holding everything that produced it.
+
+    Chat-mode runs add keys rather than changing existing ones, so every jq
+    recipe in the README keeps working across a mixed v1/v2 corpus.
+    """
     outdir = os.path.join(BASE_DIR, "poems")
     os.makedirs(outdir, exist_ok=True)
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    # Two saves in the same second would otherwise overwrite each other.
+    if os.path.exists(os.path.join(outdir, stamp + ".txt")):
+        n = 2
+        while os.path.exists(os.path.join(outdir, f"{stamp}-{n}.txt")):
+            n += 1
+        stamp = f"{stamp}-{n}"
 
     poem_path = os.path.join(outdir, stamp + ".txt")
     with open(poem_path, "w") as f:
@@ -111,8 +176,12 @@ def save_run(answers, user_prompt, poem, message):
         "system_prompt_sha256": hashlib.sha256(SYSTEM.encode()).hexdigest()[:12],
         "system_prompt": SYSTEM,
         "questions": [
-            {"key": q["key"], "question": q["prompt"], "answer": answers[q["key"]]}
-            for q in QUESTIONS
+            {
+                "key": key,
+                "question": QUESTION_TEXT[key],
+                "answer": answers.get(key, ""),
+            }
+            for key in QUESTION_TEXT
         ],
         "resolved_form": FORM,
         "user_prompt": user_prompt,
@@ -122,7 +191,21 @@ def save_run(answers, user_prompt, poem, message):
             "input_tokens": message.usage.input_tokens,
             "output_tokens": message.usage.output_tokens,
         },
+        "mode": mode,
     }
+
+    if mode == "chat":
+        # Kept out of `usage` so the token-spend recipe still means "poem cost".
+        record["persona_prompt"] = persona_prompt
+        record["persona_prompt_sha256"] = hashlib.sha256(
+            (persona_prompt or "").encode()
+        ).hexdigest()[:12]
+        record["transcript"] = transcript or []
+        record["turns"] = sum(
+            1 for t in (transcript or []) if t["role"] == "assistant"
+        )
+        record["chat_model"] = chat_model
+        record["chat_usage"] = chat_usage or {}
 
     meta_path = os.path.join(outdir, stamp + ".json")
     with open(meta_path, "w") as f:
@@ -151,17 +234,14 @@ def main():
     client = anthropic.Anthropic()
     user_prompt = build_prompt(answers)
     poem_parts = []
+    final = None
     try:
-        with client.messages.stream(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM,
-            messages=[{"role": "user", "content": user_prompt}],
-        ) as stream:
-            for text in stream.text_stream:
-                poem_parts.append(text)
-                print(text, end="", flush=True)
-            final = stream.get_final_message()
+        for kind, payload in iter_poem(client, user_prompt):
+            if kind == "text":
+                poem_parts.append(payload)
+                print(payload, end="", flush=True)
+            else:
+                final = payload
     except anthropic.APIError as e:
         sys.exit(f"\nAPI error: {e}")
     except KeyboardInterrupt:
