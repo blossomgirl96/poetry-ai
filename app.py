@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import anthropic
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -24,6 +25,12 @@ from persona import BOOTSTRAP, CHAT_MAX_TOKENS, MAX_TURNS, PERSONA, WRITE_POEM_T
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(BASE_DIR, "static", "index.html")
+
+# Voice is optional. With no key the page falls back to silent text, so the
+# app never depends on ElevenLabs being reachable or paid for.
+ELEVEN_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+ELEVEN_VOICE = os.environ.get("ELEVENLABS_VOICE_ID", "")
+TOKEN_URL = "https://api.elevenlabs.io/v1/single-use-token/tts_websocket"
 
 app = FastAPI()
 client = anthropic.Anthropic()
@@ -221,3 +228,23 @@ def write_now(body: WriteIn):
         media_type="text/event-stream",
         headers=STREAM_HEADERS,
     )
+
+
+@app.post("/voice-token")
+def voice_token():
+    """Mint a single-use ElevenLabs token so the browser can hold its own
+    WebSocket without ever seeing the API key.
+
+    Tokens last 15 minutes and are consumed on connect, so the page asks for a
+    fresh one per utterance. Note the token is unscoped — it spends against the
+    whole account balance — which is fine behind localhost but would need to sit
+    behind auth if this were ever public.
+    """
+    if not ELEVEN_KEY or not ELEVEN_VOICE:
+        raise HTTPException(status_code=503, detail="voice not configured")
+    try:
+        r = httpx.post(TOKEN_URL, headers={"xi-api-key": ELEVEN_KEY}, timeout=10)
+        r.raise_for_status()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=503, detail=f"voice unavailable: {e}")
+    return {"token": r.json()["token"], "voice_id": ELEVEN_VOICE}

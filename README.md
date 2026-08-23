@@ -1,6 +1,7 @@
 # poetry-ai
 
-Chat with Mr. Meter about someone you love. He writes them a free-verse poem.
+Chat with Mr. Meter about someone you love. He writes them a free-verse poem,
+and reads it to you.
 
 ## Setup (once)
 
@@ -46,6 +47,48 @@ Files:
 | `app.py` | FastAPI — sessions, SSE streaming, the poem handoff |
 | `static/index.html` | The whole UI. No build step, no npm |
 | `poem.py` | The poet + the v1 CLI. `iter_poem`, `build_prompt`, `save_run` |
+
+### Voice
+
+Optional, and off unless configured. Without the ElevenLabs keys the app behaves
+exactly as before — silent text — so voice can never be the reason it breaks.
+
+| Direction | Who does it | Cost |
+|---|---|---|
+| Mr. Meter speaks | ElevenLabs | ~$0.05 per 1,000 characters |
+| You speak | The browser's own `SpeechRecognition` | free |
+
+ElevenLabs only voices him; your microphone is handled by Chrome. That's deliberate
+— browser recognition gives you live interim words as you talk, and you can see and
+fix the transcript before sending. ElevenLabs' batch transcription would take that
+away for accuracy you don't need on your own side of the conversation.
+
+**The browser holds its own socket to ElevenLabs.** `POST /voice-token` mints a
+short-lived, single-use token server-side, and the page opens
+`wss://.../stream-input` with it — so Claude's text goes straight from this page
+into speech and no audio ever transits FastAPI. The API key stays on the server.
+
+**The poem is spoken stanza by stanza while it's still being written.** Deltas are
+buffered and flushed at blank lines, so the poem's own line breaks become the
+pauses, and speech starts long before the last stanza exists.
+
+Two knobs worth knowing, both in `static/index.html`:
+
+- `chunk_length_schedule` — how much text ElevenLabs buffers before generating.
+  The default first threshold (120 chars) is longer than most of Mr. Meter's
+  replies, so audio would sit waiting; it's lowered to 50. Too low and prosody
+  suffers, because it starts synthesising half-sentences. Tune by ear.
+- `VOICE_MODES` — chat uses `eleven_flash_v2_5` (~75 ms); the poem uses
+  `eleven_v3_conversational` (~280 ms, more expressive, same price). The
+  highest-fidelity `eleven_v3` **cannot** be used here — it isn't supported on the
+  streaming-input socket.
+
+At ~1,650 spoken characters per session, voice roughly doubles the cost of a poem:
+about $0.08 on top of $0.07 of Claude.
+
+Worth knowing before you use it on family stories: **Chrome's speech recognition
+uploads your audio to Google** to transcribe. It is not local. The mute button
+silences Mr. Meter; there's no equivalent for the microphone except not using it.
 
 ### Two things that will bite you
 
@@ -125,6 +168,7 @@ so the confound is at least visible; group by the pair when comparing.
 | The CLI's questions | `QUESTIONS` list in `poem.py` |
 | The form every poem takes | `FORM` string |
 | Model or length | `MODEL`, `MAX_TOKENS`, `CHAT_MAX_TOKENS` |
+| His voice | `ELEVENLABS_VOICE_ID` in `.env`; `VOICE_MODES` in `static/index.html` |
 
 ## Files
 
@@ -135,7 +179,7 @@ so the confound is at least visible; group by the pair when comparing.
 | `persona.py` | Mr. Meter. |
 | `poem.py` | The poet, and the v1 CLI. |
 | `static/index.html` | The UI, entire. |
-| `.env` | Your API key. Gitignored — never commit it. |
+| `.env` | Your API keys. Gitignored — never commit it. |
 | `poems/` | Saved poems. Gitignored. |
 
 ## Next steps worth considering

@@ -64,15 +64,32 @@
   }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button:disabled { opacity: .45; cursor: default; }
+  button.icon { padding: 9px 11px; line-height: 0; }
+  button.icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none;
+                    stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  #mic.live { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #mic.live svg { animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35 } }
+  #voice.off { opacity: .4; }
+  header .spacer { flex: 1; }
 </style>
 </head>
 <body>
-<header><h1>Mr. Meter</h1><span>a poem for someone you like</span></header>
+<header>
+  <h1>Mr. Meter</h1><span>a poem for someone you like</span>
+  <div class="spacer"></div>
+  <button id="voice" class="icon" title="Mute Mr. Meter">
+    <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path id="wave" d="M17 9.5a4 4 0 0 1 0 5"/></svg>
+  </button>
+</header>
 
 <div id="log"><div class="wrap" id="wrap"></div></div>
 
 <footer>
   <div class="row">
+    <button id="mic" class="icon" title="Speak" disabled>
+      <svg viewBox="0 0 24 24"><path d="M12 3a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-5 0v-5A2.5 2.5 0 0 1 12 3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3"/></svg>
+    </button>
     <textarea id="input" rows="1" placeholder="Say hello..." disabled></textarea>
     <button id="send" class="primary" disabled>Send</button>
     <button id="write" title="Skip ahead and write the poem now" disabled>Write it now</button>
@@ -85,6 +102,13 @@ const log = document.getElementById('log');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 const writeBtn = document.getElementById('write');
+const micBtn = document.getElementById('mic');
+const voiceBtn = document.getElementById('voice');
+
+function autosize() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
 let sessionId = null, busy = false, done = false;
 
 const atBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 60;
@@ -115,6 +139,7 @@ function setBusy(on) {
   input.disabled = off;
   sendBtn.disabled = off;
   writeBtn.disabled = off || !sessionId;
+  micBtn.disabled = off || !sessionId || !SR;
   if (!off) input.focus();
 }
 
@@ -148,24 +173,29 @@ async function stream(url, body, onEvent) {
 async function turn(url, body) {
   setBusy(true);
   let bot = null, poemEl = null, thinking = null;
+  let chatVoice = null, poemVoice = null;   // one utterance each
 
   try {
     await stream(url, body, (ev) => {
       const was = atBottom();
       switch (ev.type) {
         case 'chat_start':
+          chatVoice = makeSpeaker('chat');
           thinking = bubble('bot');
           thinking.innerHTML = '<span class="dots"></span>';
           break;
         case 'chat_delta':
           if (thinking) { thinking.textContent = ''; bot = thinking; thinking = null; }
           bot.textContent += ev.text;
+          if (chatVoice) chatVoice.feed(ev.text);
           scroll(was);
           break;
         case 'chat_end':
           if (thinking) { thinking.remove(); thinking = null; }
+          if (chatVoice) { chatVoice.end(); chatVoice = null; }
           break;
         case 'poem_start':
+          poemVoice = makeSpeaker('poem');
           poemEl = document.createElement('div');
           poemEl.className = 'poem';
           poemEl.textContent = '';
@@ -174,6 +204,7 @@ async function turn(url, body) {
           break;
         case 'poem_delta':
           poemEl.textContent += ev.text;
+          if (poemVoice) poemVoice.feed(ev.text);
           scroll(was);
           break;
         case 'poem_end': {
@@ -208,6 +239,8 @@ async function turn(url, body) {
   } catch (e) {
     note('Lost the connection: ' + e.message, true);
   }
+  if (chatVoice) chatVoice.end();
+  if (poemVoice) poemVoice.end();
   setBusy(false);
 }
 
@@ -230,26 +263,239 @@ function finish() {
 function send() {
   const text = input.value.trim();
   if (!text || busy) return;
+  stopAudio();
   bubble('me', text);
   input.value = '';
-  input.style.height = 'auto';
+  autosize();
   turn('/turn', { session_id: sessionId, message: text });
 }
 
 sendBtn.onclick = send;
+micBtn.onclick = () => { if (!busy) toggleMic(); };
+voiceBtn.onclick = () => {
+  voiceOn = !voiceOn;
+  voiceBtn.classList.toggle('off', !voiceOn);
+  voiceBtn.title = voiceOn ? 'Mute Mr. Meter' : 'Unmute Mr. Meter';
+  if (!voiceOn) stopAudio();
+};
 writeBtn.onclick = () => { if (!busy) turn('/write', { session_id: sessionId }); };
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
-});
+input.addEventListener('input', autosize);
+
+/* ---------------------------------------------------------------------------
+   Voice. Entirely optional: if /voice-token 503s (no ElevenLabs key) or the
+   socket fails, everything below no-ops and the app stays exactly as it was.
+
+   The browser holds its own WebSocket to ElevenLabs using a short-lived token
+   minted server-side, so Claude's text goes straight from this page into TTS
+   and no audio ever transits our backend.
+--------------------------------------------------------------------------- */
+
+const WS_BASE = 'wss://api.elevenlabs.io/v1/text-to-speech';
+const SAMPLE_RATE = 24000;
+
+// Chat wants speed; the poem wants expression. Same price per character.
+const VOICE_MODES = {
+  chat: {
+    model: 'eleven_flash_v2_5',
+    settings: { stability: 0.45, similarity_boost: 0.75, style: 0.25, speed: 1.0 },
+  },
+  poem: {
+    model: 'eleven_v3_conversational',
+    settings: { stability: 0.65, similarity_boost: 0.75, style: 0.4, speed: 0.92 },
+  },
+};
+
+let audioCtx = null;
+let playCursor = 0;          // when the next chunk should start
+let liveSources = [];        // so we can cut playback off mid-word
+let voiceOn = true;
+let voiceBroken = false;     // set once, after a failure, to stop retrying
+
+function ctx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Browsers refuse to start audio without a gesture, so resume on any click.
+function unlockAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+document.addEventListener('click', () => { ctx(); unlockAudio(); }, { once: true });
+
+function stopAudio() {
+  liveSources.forEach((s) => { try { s.stop(); } catch (e) {} });
+  liveSources = [];
+  playCursor = 0;
+}
+
+// ElevenLabs sends raw signed 16-bit PCM. Decoding it by hand is a few lines and
+// gives gapless scheduling — MP3 chunks off a socket would need MediaSource.
+function playPcm(b64) {
+  if (!voiceOn) return;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const pcm = new Int16Array(bytes.buffer);
+  if (!pcm.length) return;
+
+  const ac = ctx();
+  const buf = ac.createBuffer(1, pcm.length, SAMPLE_RATE);
+  const chan = buf.getChannelData(0);
+  for (let i = 0; i < pcm.length; i++) chan[i] = pcm[i] / 32768;
+
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  src.connect(ac.destination);
+  // Keep a running cursor so chunks butt up against each other seamlessly.
+  playCursor = Math.max(playCursor, ac.currentTime);
+  src.start(playCursor);
+  playCursor += buf.duration;
+  liveSources.push(src);
+  src.onended = () => { liveSources = liveSources.filter((s) => s !== src); };
+}
+
+/* A speaker for one utterance: open a socket, push text as it arrives from
+   Claude, flush at boundaries so audio starts before the text is finished. */
+function makeVoice(mode) {
+  const cfg = VOICE_MODES[mode];
+  let ws = null, ready = null, dead = !voiceOn || voiceBroken;
+
+  async function open() {
+    if (dead) return;
+    try {
+      const res = await fetch('/voice-token', { method: 'POST' });
+      if (!res.ok) { dead = true; voiceBroken = true; return; }
+      const { token, voice_id } = await res.json();
+      const url = WS_BASE + '/' + voice_id + '/stream-input'
+        + '?model_id=' + cfg.model
+        + '&output_format=pcm_' + SAMPLE_RATE
+        + '&single_use_token=' + encodeURIComponent(token);
+
+      ws = new WebSocket(url);
+      ready = new Promise((resolve) => {
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            text: ' ',
+            voice_settings: cfg.settings,
+            // Default first threshold is 120 chars — longer than most of Mr.
+            // Meter's replies, so audio would sit buffered until the flush.
+            generation_config: { chunk_length_schedule: [50, 120, 200, 290] },
+          }));
+          resolve();
+        };
+      });
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (msg.audio) playPcm(msg.audio);
+      };
+      ws.onerror = () => { dead = true; };
+      await ready;
+    } catch (e) {
+      dead = true;
+    }
+  }
+
+  const started = open();
+
+  return {
+    async say(text, flush) {
+      if (dead || !text) return;
+      await started;
+      if (dead || !ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ text: text + ' ', flush: !!flush }));
+    },
+    async close() {
+      if (dead) return;
+      await started;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ flush: true }));
+      ws.send(JSON.stringify({ text: '' }));
+      // Let the tail of the audio arrive before dropping the socket.
+      setTimeout(() => { try { ws.close(); } catch (e) {} }, 8000);
+    },
+  };
+}
+
+/* Buffers deltas and decides when to flush.
+   Chat flushes on sentence ends; the poem flushes on stanza breaks, so the
+   pauses you hear are the poem's own line breaks. */
+function makeSpeaker(mode) {
+  const v = makeVoice(mode);
+  const boundary = mode === 'poem' ? /\n\n/ : /[.!?]["')\]]?\s/;
+  let buf = '';
+  return {
+    feed(chunk) {
+      buf += chunk;
+      let m;
+      while ((m = boundary.exec(buf))) {
+        const end = m.index + m[0].length;
+        v.say(stripMarkup(buf.slice(0, end)), true);
+        buf = buf.slice(end);
+      }
+    },
+    end() {
+      if (buf.trim()) v.say(stripMarkup(buf), true);
+      buf = '';
+      v.close();
+    },
+  };
+}
+
+// The poem occasionally arrives with a Markdown heading; spoken aloud that
+// becomes "number sign". Also drop emphasis asterisks.
+function stripMarkup(s) {
+  return s.replace(/^#+\s*/gm, '').replace(/\*/g, '');
+}
+
+/* --------------------------- microphone --------------------------- */
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null, listening = false;
+
+function toggleMic() {
+  if (listening) { try { recog.stop(); } catch (e) {} return; }
+  if (!SR) return;
+  stopAudio();               // don't transcribe Mr. Meter's own voice
+  ctx(); unlockAudio();
+
+  recog = new SR();
+  recog.lang = 'en-US';
+  recog.interimResults = true;
+  recog.continuous = false;  // ends on a natural pause
+
+  recog.onresult = (e) => {
+    let txt = '';
+    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    input.value = txt;
+    autosize();
+  };
+  recog.onerror = (e) => {
+    if (e.error === 'not-allowed') note('Microphone blocked — type instead.', true);
+  };
+  recog.onend = () => {
+    listening = false;
+    micBtn.classList.remove('live');
+    if (input.value.trim() && !busy) send();
+  };
+
+  try {
+    recog.start();
+    listening = true;
+    micBtn.classList.add('live');
+  } catch (e) {
+    listening = false;
+  }
+}
+
 
 (async function start() {
   const res = await fetch('/session', { method: 'POST' });
   sessionId = (await res.json()).session_id;
-  input.placeholder = 'Type a message...';
+  input.placeholder = SR ? 'Type a message, or tap the mic...' : 'Type a message...';
+  if (SR) micBtn.disabled = false; else micBtn.style.display = 'none';
   await turn('/turn', { session_id: sessionId, message: '' });  // greeting
 })();
 </script>
