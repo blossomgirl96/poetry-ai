@@ -209,7 +209,9 @@ STREAM_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
 @app.get("/")
 def index():
-    return FileResponse(INDEX)
+    # No-store, because the whole UI lives in this one file: without it Chrome
+    # keeps serving a stale page after every edit.
+    return FileResponse(INDEX, headers={"Cache-Control": "no-store, must-revalidate"})
 
 
 @app.post("/session")
