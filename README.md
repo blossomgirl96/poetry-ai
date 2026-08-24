@@ -58,10 +58,16 @@ exactly as before — silent text — so voice can never be the reason it breaks
 | Mr. Meter speaks | ElevenLabs | ~$0.05 per 1,000 characters |
 | You speak | The browser's own `SpeechRecognition` | free |
 
+
 ElevenLabs only voices him; your microphone is handled by Chrome. That's deliberate
 — browser recognition gives you live interim words as you talk, and you can see and
 fix the transcript before sending. ElevenLabs' batch transcription would take that
 away for accuracy you don't need on your own side of the conversation.
+
+**The mic stays open until you tap it again.** Chrome ends recognition at the
+first pause, which meant thinking mid-sentence cut you off and sent the
+fragment. It now listens continuously and restarts itself through silences;
+tapping the mic a second time is what ends the turn and sends.
 
 **The browser holds its own socket to ElevenLabs.** `POST /voice-token` mints a
 short-lived, single-use token server-side, and the page opens

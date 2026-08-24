@@ -139,7 +139,7 @@ function setBusy(on) {
   input.disabled = off;
   sendBtn.disabled = off;
   writeBtn.disabled = off || !sessionId;
-  micBtn.disabled = off || !sessionId || !SR;
+  micBtn.disabled = (off && !listening) || !sessionId || !SR;
   if (!off) input.focus();
 }
 
@@ -477,43 +477,75 @@ function stripMarkup(s) {
 /* --------------------------- microphone --------------------------- */
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recog = null, listening = false;
+let recog = null, listening = false, wantStop = false, committed = '';
 
-function toggleMic() {
-  if (listening) { try { recog.stop(); } catch (e) {} return; }
-  if (!SR) return;
-  stopAudio();               // don't transcribe Mr. Meter's own voice
-  ctx(); unlockAudio();
-
+// Chrome ends recognition at the first pause. With continuous listening plus a
+// restart-on-silence loop, you can think mid-sentence without the turn being
+// cut off and sent — you decide when you're finished by tapping the mic again.
+function startRecog() {
   recog = new SR();
   recog.lang = 'en-US';
   recog.interimResults = true;
-  recog.continuous = false;  // ends on a natural pause
+  recog.continuous = true;
 
   recog.onresult = (e) => {
-    let txt = '';
-    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
-    input.value = txt;
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) committed += t;
+      else interim += t;
+    }
+    input.value = (committed + interim).replace(/\s+/g, ' ').trim();
     autosize();
   };
+
   recog.onerror = (e) => {
-    if (e.error === 'not-allowed') note('Microphone blocked — type instead.', true);
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      wantStop = true;
+      note('Microphone blocked — type instead.', true);
+    }
+    // 'no-speech' and 'aborted' are normal during a pause; onend restarts.
   };
+
   recog.onend = () => {
-    listening = false;
-    micBtn.classList.remove('live');
-    if (input.value.trim() && !busy) send();
+    if (wantStop) { endListening(); return; }
+    try { recog.start(); } catch (err) { endListening(); }
   };
 
   try {
     recog.start();
-    listening = true;
-    micBtn.classList.add('live');
-  } catch (e) {
-    listening = false;
+  } catch (err) {
+    endListening();
   }
 }
 
+function endListening() {
+  listening = false;
+  wantStop = false;
+  micBtn.classList.remove('live');
+  micBtn.title = 'Speak';
+  input.placeholder = 'Type a message, or tap the mic...';
+  if (input.value.trim() && !busy) send();
+}
+
+function toggleMic() {
+  if (listening) {           // they're done talking
+    wantStop = true;
+    try { recog.stop(); } catch (e) { endListening(); }
+    return;
+  }
+  if (!SR) return;
+  stopAudio();               // don't transcribe Mr. Meter's own voice
+  ctx(); unlockAudio();
+
+  committed = '';
+  input.value = '';
+  listening = true;
+  micBtn.classList.add('live');
+  micBtn.title = 'Done talking';
+  input.placeholder = 'Listening — take your time, tap the mic when you are done';
+  startRecog();
+}
 
 (async function start() {
   const res = await fetch('/session', { method: 'POST' });
