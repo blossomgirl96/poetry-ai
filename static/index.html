@@ -232,6 +232,8 @@ async function turn(url, body) {
           finish();
           break;
         case 'error':
+          if (thinking) { thinking.remove(); thinking = null; }
+          if (bot && !bot.textContent.trim()) { bot.remove(); bot = null; }
           note(ev.message, true);
           break;
       }
@@ -303,7 +305,10 @@ const VOICE_MODES = {
     settings: { stability: 0.45, similarity_boost: 0.75, style: 0.25, speed: 1.0 },
   },
   poem: {
-    model: 'eleven_v3_conversational',
+    // Not eleven_v3 or eleven_v3_conversational — stream-input rejects both,
+    // and does it with an abnormal close carrying no error message.
+    // multilingual_v2 is the best-sounding model that the socket accepts.
+    model: 'eleven_multilingual_v2',
     settings: { stability: 0.65, similarity_boost: 0.75, style: 0.4, speed: 0.92 },
   },
 };
@@ -361,7 +366,7 @@ function playPcm(b64) {
    Claude, flush at boundaries so audio starts before the text is finished. */
 function makeVoice(mode) {
   const cfg = VOICE_MODES[mode];
-  let ws = null, ready = null, dead = !voiceOn || voiceBroken;
+  let ws = null, ready = null, dead = !voiceOn || voiceBroken, gotAudio = false;
 
   async function open() {
     if (dead) return;
@@ -389,7 +394,7 @@ function makeVoice(mode) {
       });
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
-        if (msg.audio) { playPcm(msg.audio); return; }
+        if (msg.audio) { gotAudio = true; playPcm(msg.audio); return; }
         // ElevenLabs reports config problems (bad voice id, unknown model) as a
         // message on the socket, not an HTTP error. Say so once rather than
         // leaving the user wondering why it's silent.
@@ -402,6 +407,15 @@ function makeVoice(mode) {
         }
       };
       ws.onerror = () => { dead = true; };
+      ws.onclose = (e) => {
+        // 1006 with nothing received means the socket was refused outright —
+        // an unsupported model does this, with no error message to report.
+        if (e.code !== 1000 && !gotAudio && !window.__voiceWarned) {
+          window.__voiceWarned = true;
+          voiceBroken = true;
+          note('Voice off — the speech connection closed unexpectedly (code ' + e.code + ').', true);
+        }
+      };
       await ready;
     } catch (e) {
       dead = true;

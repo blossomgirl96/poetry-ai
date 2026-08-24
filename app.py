@@ -21,7 +21,14 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 import poem
-from persona import BOOTSTRAP, CHAT_MAX_TOKENS, MAX_TURNS, PERSONA, WRITE_POEM_TOOL
+from persona import (
+    BOOTSTRAP,
+    CHAT_MAX_TOKENS,
+    MAX_TURNS,
+    PERSONA,
+    WRITE_NOW,
+    WRITE_POEM_TOOL,
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(BASE_DIR, "static", "index.html")
@@ -111,6 +118,11 @@ def run_turn(session, user_message, force=False):
     elif user_message:
         pending.append({"role": "user", "content": user_message})
         session.transcript.append({"role": "user", "content": user_message})
+    elif force:
+        # Opus 5 rejects a conversation ending on an assistant turn, and
+        # "Write it now" carries no text. Kept out of the transcript: it's a
+        # button press, not something they said about the person.
+        pending.append({"role": "user", "content": WRITE_NOW})
 
     try:
         # --- Mr. Meter ---

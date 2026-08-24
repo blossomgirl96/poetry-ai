@@ -88,3 +88,7 @@ CHAT_MAX_TOKENS = 2000
 # The Messages API needs a user turn first, but Mr. Meter speaks first.
 BOOTSTRAP = "(The person has just opened the app.)"
 
+# "Write it now" sends no text of its own, but the API requires the
+# conversation to end on a user turn, so the button needs a voice.
+WRITE_NOW = "(They would like the poem now, with whatever you have.)"
+

@@ -78,10 +78,12 @@ Two knobs worth knowing, both in `static/index.html`:
   The default first threshold (120 chars) is longer than most of Mr. Meter's
   replies, so audio would sit waiting; it's lowered to 50. Too low and prosody
   suffers, because it starts synthesising half-sentences. Tune by ear.
-- `VOICE_MODES` — chat uses `eleven_flash_v2_5` (~75 ms); the poem uses
-  `eleven_v3_conversational` (~280 ms, more expressive, same price). The
-  highest-fidelity `eleven_v3` **cannot** be used here — it isn't supported on the
-  streaming-input socket.
+- `VOICE_MODES` — chat uses `eleven_flash_v2_5`, the poem uses
+  `eleven_multilingual_v2` (better prosody for verse, double the per-character
+  price at ~$0.10/1k). **Neither `eleven_v3` nor `eleven_v3_conversational`
+  works here** — the streaming-input socket refuses both, and does it with an
+  abnormal close carrying no error message. Verified: `flash_v2_5`,
+  `multilingual_v2` and `turbo_v2_5` all work.
 
 At ~1,650 spoken characters per session, voice roughly doubles the cost of a poem:
 about $0.08 on top of $0.07 of Claude.
