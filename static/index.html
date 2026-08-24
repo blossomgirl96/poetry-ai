@@ -496,7 +496,9 @@ function startRecog() {
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) committed += t;
+      // Chrome returns finals with no trailing space, so joining them raw
+        // fuses the last word of one phrase onto the first of the next.
+        if (e.results[i].isFinal) committed += t.trim() + ' ';
       else interim += t;
     }
     input.value = (committed + interim).replace(/\s+/g, ' ').trim();
