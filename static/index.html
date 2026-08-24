@@ -263,6 +263,7 @@ function finish() {
 }
 
 function send() {
+  stopListening(false);
   const text = input.value.trim();
   if (!text || busy) return;
   stopAudio();
@@ -280,7 +281,7 @@ voiceBtn.onclick = () => {
   voiceBtn.title = voiceOn ? 'Mute Mr. Meter' : 'Unmute Mr. Meter';
   if (!voiceOn) stopAudio();
 };
-writeBtn.onclick = () => { if (!busy) turn('/write', { session_id: sessionId }); };
+writeBtn.onclick = () => { stopListening(false); if (!busy) turn('/write', { session_id: sessionId }); };
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
@@ -477,7 +478,7 @@ function stripMarkup(s) {
 /* --------------------------- microphone --------------------------- */
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recog = null, listening = false, wantStop = false, committed = '';
+let recog = null, listening = false, wantStop = false, sendOnEnd = false, committed = '';
 
 // Chrome ends recognition at the first pause. With continuous listening plus a
 // restart-on-silence loop, you can think mid-sentence without the turn being
@@ -489,6 +490,9 @@ function startRecog() {
   recog.continuous = true;
 
   recog.onresult = (e) => {
+    // stop() is asynchronous and Mr. Meter starts speaking straight away, so
+    // without this guard his reply gets transcribed into the input box.
+    if (!listening) return;
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
@@ -501,39 +505,53 @@ function startRecog() {
 
   recog.onerror = (e) => {
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      wantStop = true;
       note('Microphone blocked — type instead.', true);
+      stopListening(false);
     }
     // 'no-speech' and 'aborted' are normal during a pause; onend restarts.
   };
 
   recog.onend = () => {
-    if (wantStop) { endListening(); return; }
-    try { recog.start(); } catch (err) { endListening(); }
+    if (wantStop) {
+      wantStop = false;
+      if (sendOnEnd) {
+        sendOnEnd = false;
+        if (input.value.trim() && !busy) send();
+      }
+      return;
+    }
+    // A silence, not a stop — keep the turn alive.
+    try { recog.start(); } catch (err) { stopListening(false); }
   };
 
   try {
     recog.start();
   } catch (err) {
-    endListening();
+    stopListening(false);
   }
 }
 
-function endListening() {
+// Close the mic. `andSend` separates "tapped the mic to finish" from every
+// other way a turn can end — Send, Write it now, an error. Those must also
+// close it, or the open microphone hears Mr. Meter and types his reply back.
+function stopListening(andSend) {
+  if (!listening) return;
   listening = false;
-  wantStop = false;
+  wantStop = true;
+  sendOnEnd = !!andSend;
   micBtn.classList.remove('live');
   micBtn.title = 'Speak';
   input.placeholder = 'Type a message, or tap the mic...';
-  if (input.value.trim() && !busy) send();
+  try {
+    recog.stop();
+  } catch (e) {
+    wantStop = false;
+    sendOnEnd = false;
+  }
 }
 
 function toggleMic() {
-  if (listening) {           // they're done talking
-    wantStop = true;
-    try { recog.stop(); } catch (e) { endListening(); }
-    return;
-  }
+  if (listening) { stopListening(true); return; }   // done talking -> send
   if (!SR) return;
   stopAudio();               // don't transcribe Mr. Meter's own voice
   ctx(); unlockAudio();
