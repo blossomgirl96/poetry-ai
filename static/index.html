@@ -389,7 +389,17 @@ function makeVoice(mode) {
       });
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
-        if (msg.audio) playPcm(msg.audio);
+        if (msg.audio) { playPcm(msg.audio); return; }
+        // ElevenLabs reports config problems (bad voice id, unknown model) as a
+        // message on the socket, not an HTTP error. Say so once rather than
+        // leaving the user wondering why it's silent.
+        if (msg.error) {
+          dead = true; voiceBroken = true;
+          if (!window.__voiceWarned) {
+            window.__voiceWarned = true;
+            note('Voice off — ' + (msg.message || msg.error), true);
+          }
+        }
       };
       ws.onerror = () => { dead = true; };
       await ready;
