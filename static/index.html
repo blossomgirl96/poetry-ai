@@ -305,17 +305,39 @@ async function turn(url, body) {
 function finish() {
   const row = document.querySelector('.row');
   row.innerHTML = '';
-  const copy = document.createElement('button');
-  copy.textContent = 'Copy poem';
-  copy.onclick = () => {
-    const p = document.querySelector('.poem');
-    if (p) navigator.clipboard.writeText(p.innerText).then(() => (copy.textContent = 'Copied'));
+  const dl = document.createElement('button');
+  dl.textContent = 'Download poem';
+  dl.onclick = async () => {
+    if (dl.disabled) return;
+    dl.disabled = true;
+    const said = dl.textContent;
+    dl.textContent = 'Painting it...';
+    // Opened before the await: a popup blocked for lack of a user gesture is
+    // the one failure a try/catch here would not otherwise explain.
+    const win = window.open('', '_blank');
+    try {
+      const res = await fetch('/poem-card', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      if (!res.ok) throw new Error('could not build the card');
+      const { html } = await res.json();
+      if (!win) { note('Allow pop-ups to download the poem.', true); return; }
+      win.document.write(html);
+      win.document.close();
+    } catch (e) {
+      if (win) win.close();
+      note('Could not make the download — ' + e.message, true);
+    }
+    dl.textContent = said;
+    dl.disabled = false;
   };
   const again = document.createElement('button');
   again.className = 'primary';
   again.textContent = 'New poem';
   again.onclick = () => location.reload();
-  row.append(copy, again);
+  row.append(dl, again);
 }
 
 async function send() {

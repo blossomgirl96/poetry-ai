@@ -5,6 +5,25 @@ and reads it to you.
 
 ## What's new in v4
 
+**Download the poem as a painted card.** "Copy poem" is now "Download poem": it
+builds the card from `Mr Meter Poem Card.dc.html` — the poem set large in
+Newsreader on off-white paper, washed in watercolour — and hands it to the
+browser's print dialog, where *Save as PDF* is the destination. The window title
+is the poem's title, so that becomes the filename.
+
+**The wash is painted from the poem.** A short Haiku call reads the finished poem
+and picks the colours: three mid-tone `wash` shades for the weather of it and two
+or three saturated `bloom` shades that pool over them. Monsoon rain comes back
+blue-grey and teal; a kitchen at dusk comes back cream and gold; a poem about a
+death comes back pale and cold. The palette is chosen once per poem and kept, so
+the preview and the download match. Any failure falls back to the sample card's
+rain-grey.
+
+Printing rather than generating the PDF server-side is deliberate: the effect is
+`filter: blur()` over `mix-blend-mode: multiply`, which Chrome renders exactly
+and a Python PDF library would flatten or drop. `GET /poem-card/preview` shows
+the same card as a page if you just want to look at it.
+
 **A landing page, and a design system.** `/` is now a front page — hero, a
 sample conversation, three things he does, a closing call to action — and the
 chat has moved to `/chat`. Both are built from the Mr. Meter design system:
