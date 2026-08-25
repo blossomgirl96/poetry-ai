@@ -64,6 +64,14 @@ ElevenLabs only voices him; your microphone is handled by Chrome. That's deliber
 fix the transcript before sending. ElevenLabs' batch transcription would take that
 away for accuracy you don't need on your own side of the conversation.
 
+**Dictation is punctuated before it's sent.** Browser speech recognition
+returns no punctuation and every "um", which is ugly to look at and worse as
+source material for the poet. Tapping the mic to finish routes the text
+through `POST /tidy` first — a one-second pass on Haiku that adds punctuation,
+drops fillers and repairs stumbles without changing their words. It is
+best-effort: a failure, a timeout, or an answer that no longer resembles what
+they said all fall back to the raw transcript.
+
 **The mic stays open until you tap it again.** Chrome ends recognition at the
 first pause, which meant thinking mid-sentence cut you off and sent the
 fragment. It now listens continuously and restarts itself through silences;
@@ -176,6 +184,7 @@ so the confound is at least visible; group by the pair when comparing.
 | The CLI's questions | `QUESTIONS` list in `poem.py` |
 | The form every poem takes | `FORM` string |
 | Model or length | `MODEL`, `MAX_TOKENS`, `CHAT_MAX_TOKENS` |
+| Dictation clean-up | `TIDY_MODEL` and `TIDY_PROMPT` in `app.py` |
 | His voice | `ELEVENLABS_VOICE_ID` in `.env`; `VOICE_MODES` in `static/index.html` |
 
 ## Files

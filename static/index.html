@@ -518,7 +518,7 @@ function startRecog() {
       wantStop = false;
       if (sendOnEnd) {
         sendOnEnd = false;
-        if (input.value.trim() && !busy) send();
+        if (input.value.trim() && !busy) tidyAndSend();
       }
       return;
     }
@@ -550,6 +550,38 @@ function stopListening(andSend) {
     wantStop = false;
     sendOnEnd = false;
   }
+}
+
+// Speech recognition returns no punctuation, so clean the dictation up before
+// it goes to Mr. Meter — and before it lands in the transcript the poet reads.
+// Strictly best-effort: any failure or delay sends the raw words instead.
+async function tidyAndSend() {
+  const raw = input.value.trim();
+  if (!raw) return;
+  const held = input.placeholder;
+  input.placeholder = 'Tidying that up...';
+  input.disabled = true;
+  try {
+    const ctrl = new AbortController();
+    const bail = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch('/tidy', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: raw }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(bail);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.text) input.value = data.text;
+    }
+  } catch (e) {
+    input.value = raw;   // timed out or failed — send what they actually said
+  }
+  input.disabled = false;
+  input.placeholder = held;
+  autosize();
+  if (!busy) send();
 }
 
 function toggleMic() {
