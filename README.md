@@ -17,6 +17,10 @@ no punctuation and every "um", which is ugly to read and worse as the verbatim
 source material the poet sees. A one-second pass adds punctuation, drops fillers
 and repairs stumbles without changing your words.
 
+**The chat has faces.** A quill beside Mr. Meter, an anonymous face beside you —
+both inline SVG drawn in `currentColor`, so there's still nothing to fetch and
+they follow the light and dark palettes on their own.
+
 **Mr. Meter got quieter.** The instruction that made him volunteer an anecdote in
 every reply is gone, and the seven-angle question list collapsed to the two rules
 that were doing the work — open a different door each time, never twice from the
@@ -72,7 +76,7 @@ Files:
 |---|---|
 | `persona.py` | Mr. Meter's prompt, the `write_poem` tool, `MAX_TURNS` |
 | `app.py` | FastAPI — sessions, SSE streaming, the poem handoff |
-| `static/index.html` | The whole UI. No build step, no npm |
+| `static/index.html` | The whole UI — markup, styles, voice, avatars. No build step, no npm |
 | `poem.py` | The poet + the v1 CLI. `iter_poem`, `build_prompt`, `save_run` |
 
 ### Voice
