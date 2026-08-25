@@ -268,10 +268,18 @@ async function turn(url, body) {
           // has closed rather than fighting token boundaries mid-flight.
           const raw = poemEl.textContent;
           const br = raw.indexOf('\n\n');
-          if (br > 0) {
+          const head = br > 0 ? raw.slice(0, br).trim() : '';
+          const rest = br > 0 ? raw.slice(br + 2) : raw;
+          // Emphasis arrives as *asterisks*; show it as emphasis. Text is set
+          // via a text node first, so nothing from the poem is ever parsed.
+          poemEl.textContent = '';
+          const body = document.createElement('span');
+          body.textContent = rest.replace(/^#{1,6}\s*/gm, '');
+          body.innerHTML = body.innerHTML.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+          poemEl.appendChild(body);
+          if (head) {
             const h = document.createElement('h2');
-            h.textContent = raw.slice(0, br).trim();
-            poemEl.textContent = raw.slice(br + 2);
+            h.textContent = head.replace(/^#{1,6}\s*/, '');
             poemEl.prepend(h);
           }
           if (ev.stop_reason === 'max_tokens') {

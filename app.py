@@ -412,6 +412,19 @@ QUILL_PATHS = (
 )
 
 
+def _verse_html(text):
+    """Escape the poem, then let its emphasis be emphasis.
+
+    Claude reaches for *asterisks* now and then. On the card they printed as
+    literal asterisks, which looks like a mistake on a thing meant to be kept.
+    Newsreader ships an italic, so use it.
+    """
+    out = html.escape(text)
+    out = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", out)
+    out = re.sub(r"^#{1,6}\s*", "", out, flags=re.M)
+    return out
+
+
 def _rgba(hex_colour, alpha):
     h = hex_colour.lstrip("#")
     r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
@@ -527,8 +540,8 @@ def render_card(title, body, palette, caption):
       <svg viewBox="0 0 24 24" aria-hidden="true">{QUILL_PATHS}</svg>
       <span class="label">Mr. Meter</span>
     </div>
-    <h1>{esc(title)}</h1>
-    <p class="verse">{esc(body)}</p>
+    <h1>{esc(title.lstrip("# ").strip())}</h1>
+    <p class="verse">{_verse_html(body)}</p>
     <div class="foot">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5a4 4 0 0 1 0 5"/></svg>
       <span class="label">{esc(caption)}</span>
