@@ -312,9 +312,6 @@ function finish() {
     dl.disabled = true;
     const said = dl.textContent;
     dl.textContent = 'Painting it...';
-    // Opened before the await: a popup blocked for lack of a user gesture is
-    // the one failure a try/catch here would not otherwise explain.
-    const win = window.open('', '_blank');
     try {
       const res = await fetch('/poem-card', {
         method: 'POST',
@@ -323,11 +320,8 @@ function finish() {
       });
       if (!res.ok) throw new Error('could not build the card');
       const { html } = await res.json();
-      if (!win) { note('Allow pop-ups to download the poem.', true); return; }
-      win.document.write(html);
-      win.document.close();
+      await printCard(html);
     } catch (e) {
-      if (win) win.close();
       note('Could not make the download — ' + e.message, true);
     }
     dl.textContent = said;
@@ -338,6 +332,31 @@ function finish() {
   again.textContent = 'New poem';
   again.onclick = () => location.reload();
   row.append(dl, again);
+}
+
+// An off-screen iframe rather than a popup. Opening a window is blocked by
+// default in Chrome and fails silently from the page's point of view; printing
+// a frame needs no permission at all.
+function printCard(html) {
+  return new Promise((resolve) => {
+    const frame = document.createElement('iframe');
+    // Laid out at A4 but parked off-screen — a 0x0 frame paginates wrongly.
+    frame.style.cssText =
+      'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;';
+    frame.setAttribute('aria-hidden', 'true');
+    let settled = false;
+    const done = () => { if (settled) return; settled = true; frame.remove(); resolve(); };
+    frame.onload = async () => {
+      const w = frame.contentWindow;
+      try { if (w.document.fonts) await w.document.fonts.ready; } catch (e) {}
+      w.onafterprint = done;
+      setTimeout(done, 60000);   // if the dialog closes without firing afterprint
+      w.focus();
+      w.print();
+    };
+    frame.srcdoc = html;
+    document.body.appendChild(frame);
+  });
 }
 
 async function send() {

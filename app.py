@@ -512,9 +512,12 @@ def render_card(title, body, palette, caption):
   </div>
 </div>
 <script>
-  // Wait for the fonts, or the first paint prints in a fallback serif.
-  (document.fonts ? document.fonts.ready : Promise.resolve())
-    .then(() => setTimeout(() => window.print(), 120));
+  // Tell the embedder when the fonts have landed; printing before they do gets
+  // you a fallback serif. The page that embeds this decides when to print.
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {{
+    window.__cardReady = true;
+    try {{ parent.postMessage('card-ready', '*'); }} catch (e) {{}}
+  }});
 </script>
 </body>
 </html>
@@ -591,4 +594,4 @@ def poem_card_preview(session_id: str):
     subject = (session.answers.get("subject") or "").strip()
     caption = f"written for {subject}" if subject else "written by Mr. Meter"
     page = render_card(session.title, session.poem, palette, caption)
-    return HTMLResponse(page.replace("window.print()", "void 0"), headers=NO_STORE)
+    return HTMLResponse(page, headers=NO_STORE)
