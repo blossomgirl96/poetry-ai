@@ -469,8 +469,15 @@ def render_card(title, body, palette, caption):
   .bloom  {{ inset: 0; background-image: {bloom}; mix-blend-mode: multiply; filter: blur(30px); }}
   .settle {{ left: 0; right: 0; bottom: 0; height: 460px; background-image: {settle};
              mix-blend-mode: multiply; filter: blur(34px); }}
+  /* The gutters live in a table head and foot because Chrome repeats those on
+     every printed page — padding on the content block only applies once, which
+     is why continuation pages used to start hard against the paper edge. */
+  .page {{ position: relative; width: 100%; border-collapse: collapse; }}
+  .col {{ vertical-align: top; padding: 0 56px; }}
+  .gut-top {{ height: 96px; }}
+  .gut-bot {{ height: 120px; }}
   .inner {{ position: relative; max-width: 760px; margin: 0 auto;
-            padding: 96px 56px 120px; display: flex; flex-direction: column; gap: 40px; }}
+            display: flex; flex-direction: column; gap: 40px; }}
   .mark {{ display: flex; align-items: center; gap: 11px; }}
   .mark svg {{ width: 20px; height: 20px; color: #8A5A34; }}
   .label {{ font: 11px/1 'IBM Plex Mono', monospace; letter-spacing: .14em;
@@ -483,21 +490,38 @@ def render_card(title, body, palette, caption):
            border-top: 1px solid rgba(36,31,26,.14); }}
   .foot svg {{ width: 15px; height: 15px; color: #8A5A34; stroke: currentColor;
                fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }}
-  @page {{ size: A4; margin: 0; }}
+  @page {{
+    size: A4;
+    /* Zero, so the wash reaches the paper edge — Chrome clips fixed elements to
+       the page content box, so any @page margin would frame it in white.
+       The text keeps its margins via the repeating gutters instead. */
+    margin: 0;
+  }}
   @media print {{
-    /* Chrome drops background paint when printing unless asked not to — and the
-       wash is the whole point of the card. */
     html, body, .sheet {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-    .sheet {{ min-height: 297mm; }}
-    .inner {{ padding: 74px 62px 60px; }}
-    h1 {{ font-size: 40px; }}
-    .verse {{ font-size: 18px; line-height: 1.7; }}
+    /* Fixed, not absolute: Chrome repeats fixed layers on every page, where an
+       absolute one stops with the content and leaves later pages bare. */
+    .wash, .bloom, .settle {{ position: fixed; }}
+    .wash, .bloom {{ inset: 0; }}
+    .settle {{ left: 0; right: 0; bottom: 0; top: auto; height: 300px; }}
+    .sheet {{ min-height: 0; }}
+    .col {{ padding: 0 18mm; }}
+    .gut-top {{ height: 20mm; }}
+    .gut-bot {{ height: 16mm; }}
+    .inner {{ max-width: none; gap: 34px; }}
+    h1 {{ font-size: 38px; }}
+    .verse {{ font-size: 17.5px; line-height: 1.72; orphans: 3; widows: 3; }}
+    .mark, .foot {{ break-inside: avoid; }}
   }}
 </style>
 </head>
 <body>
 <div class="sheet">
   <div class="wash"></div><div class="bloom"></div><div class="settle"></div>
+  <table class="page">
+  <thead><tr><td><div class="gut-top"></div></td></tr></thead>
+  <tfoot><tr><td><div class="gut-bot"></div></td></tr></tfoot>
+  <tbody><tr><td class="col">
   <div class="inner">
     <div class="mark">
       <svg viewBox="0 0 24 24" aria-hidden="true">{QUILL_PATHS}</svg>
@@ -510,6 +534,8 @@ def render_card(title, body, palette, caption):
       <span class="label">{esc(caption)}</span>
     </div>
   </div>
+  </td></tr></tbody>
+  </table>
 </div>
 <script>
   // Tell the embedder when the fonts have landed; printing before they do gets

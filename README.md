@@ -19,6 +19,13 @@ death comes back pale and cold. The palette is chosen once per poem and kept, so
 the preview and the download match. Any failure falls back to the sample card's
 rain-grey.
 
+Two things make it paginate properly across pages. `@page` margin is zero so
+the wash reaches the paper edge — Chrome clips fixed elements to the page content
+box, so any page margin would frame the card in white — and the text gets its
+margins instead from a table head and foot, which Chrome repeats on every page.
+The wash layers are `position: fixed` in print for the same reason: an absolute
+layer stops where the content stops and leaves later pages bare.
+
 Printing rather than generating the PDF server-side is deliberate: the effect is
 `filter: blur()` over `mix-blend-mode: multiply`, which Chrome renders exactly
 and a Python PDF library would flatten or drop. `GET /poem-card/preview` shows
