@@ -5,19 +5,25 @@ and reads it to you.
 
 ## What's new in v4
 
-**Download the poem as a painted card.** "Copy poem" is now "Download poem": it
-builds the card from `Mr Meter Poem Card.dc.html` — the poem set large in
-Newsreader on off-white paper, washed in watercolour — and hands it to the
-browser's print dialog, where *Save as PDF* is the destination. The window title
-is the poem's title, so that becomes the filename.
+**Download the poem as a painted card.** "Copy poem" is now "Download poem": the
+poem set large in Newsreader on washed paper, handed to the browser's print
+dialog where *Save as PDF* is the destination. The window title is the poem's
+title, so that becomes the filename.
 
-**The wash is painted from the poem.** A short Haiku call reads the finished poem
-and picks the colours: three mid-tone `wash` shades for the weather of it and two
-or three saturated `bloom` shades that pool over them. Monsoon rain comes back
-blue-grey and teal; a kitchen at dusk comes back cream and gold; a poem about a
-death comes back pale and cold. The palette is chosen once per poem and kept, so
-the preview and the download match. Any failure falls back to the sample card's
-rain-grey.
+**Every poem is painted fresh.** The wash is not a fixed arrangement in different
+colours — a short Haiku call composes it: how many pools of pigment, where each
+one sits, how large, how wet the paper is, which ones darken what lies under
+them. A poem about a death has come back with the pigment pushed off every edge
+and the middle left bare; a kitchen at dusk with amber rising from below like
+lamplight; monsoon rain with heavy overlapping greys. The prompt names the
+top-and-bottom band as the arrangement to avoid.
+
+Opacities are normalised server-side: left alone it reaches for very thin paint
+that vanishes on off-white paper, so the whole painting is scaled up by its
+strongest layer — which keeps whatever balance it composed and only lifts it
+until it registers. Everything else is clamped, so a bad answer can't break the
+page, and a failed call falls back to something deliberately plain. The painting
+is made once per poem and kept, so the preview and the download match.
 
 Two things make it paginate properly across pages. `@page` margin is zero so
 the wash reaches the paper edge — Chrome clips fixed elements to the page content
