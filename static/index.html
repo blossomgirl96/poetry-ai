@@ -262,8 +262,12 @@ function finish() {
   row.append(copy, again);
 }
 
-function send() {
+async function send() {
   stopListening(false);
+  if (!input.value.trim() || busy) return;
+  // Dictation arrives unpunctuated whichever way the turn ends — mic, Send or
+  // Enter — so the clean-up belongs here rather than on the mic path alone.
+  if (dictated) { dictated = false; await tidyText(); }
   const text = input.value.trim();
   if (!text || busy) return;
   stopAudio();
@@ -285,7 +289,7 @@ writeBtn.onclick = () => { stopListening(false); if (!busy) turn('/write', { ses
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
-input.addEventListener('input', autosize);
+input.addEventListener('input', () => { dictated = false; autosize(); });
 
 /* ---------------------------------------------------------------------------
    Voice. Entirely optional: if /voice-token 503s (no ElevenLabs key) or the
@@ -479,6 +483,7 @@ function stripMarkup(s) {
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recog = null, listening = false, wantStop = false, sendOnEnd = false, committed = '';
+let dictated = false;   // the box holds speech, not typing — tidy it before sending
 
 // Chrome ends recognition at the first pause. With continuous listening plus a
 // restart-on-silence loop, you can think mid-sentence without the turn being
@@ -497,11 +502,12 @@ function startRecog() {
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
       // Chrome returns finals with no trailing space, so joining them raw
-        // fuses the last word of one phrase onto the first of the next.
-        if (e.results[i].isFinal) committed += t.trim() + ' ';
+      // fuses the last word of one phrase onto the first of the next.
+      if (e.results[i].isFinal) committed += t.trim() + ' ';
       else interim += t;
     }
     input.value = (committed + interim).replace(/\s+/g, ' ').trim();
+    dictated = true;
     autosize();
   };
 
@@ -518,7 +524,7 @@ function startRecog() {
       wantStop = false;
       if (sendOnEnd) {
         sendOnEnd = false;
-        if (input.value.trim() && !busy) tidyAndSend();
+        if (input.value.trim() && !busy) send();
       }
       return;
     }
@@ -555,7 +561,7 @@ function stopListening(andSend) {
 // Speech recognition returns no punctuation, so clean the dictation up before
 // it goes to Mr. Meter — and before it lands in the transcript the poet reads.
 // Strictly best-effort: any failure or delay sends the raw words instead.
-async function tidyAndSend() {
+async function tidyText() {
   const raw = input.value.trim();
   if (!raw) return;
   const held = input.placeholder;
@@ -581,7 +587,6 @@ async function tidyAndSend() {
   input.disabled = false;
   input.placeholder = held;
   autosize();
-  if (!busy) send();
 }
 
 function toggleMic() {
