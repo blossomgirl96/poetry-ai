@@ -3,6 +3,25 @@
 Chat with Mr. Meter about someone you love. He writes them a free-verse poem,
 and reads it to you.
 
+## What's new in v4
+
+**A landing page, and a design system.** `/` is now a front page — hero, a
+sample conversation, three things he does, a closing call to action — and the
+chat has moved to `/chat`. Both are built from the Mr. Meter design system:
+paper `#FBF6EE`, ink `#241F1A`, one warm accent `#8A5A34`, with Newsreader for
+anything in his voice (headings, verse), Instrument Sans for interface, and IBM
+Plex Mono for small uppercase labels. The system's first rule — *never set a
+poem in the interface sans* — is why the poem is now Newsreader at 19/1.75.
+
+The source design lives in `Mr. Meter poetry landing page/`. The `.dc.html`
+files carry design-tool wrappers (`<x-dc>`, `<sc-if>`, `support.js`); the built
+page strips those and points the placeholder anchors at `/chat`.
+
+Two things the design leaves open: the three cards under "Meet Mr. Meter" are
+hatched placeholders captioned *studio, desk detail* and so on — they want real
+photography. And the system is light-only; the dark palette in the chat is a
+mapping of the same roles, not something the designer specified.
+
 ## What's new in v3
 
 **Mr. Meter talks, and listens.** ElevenLabs voices him over a WebSocket the
@@ -51,7 +70,8 @@ It should look like `sk-ant-api03-…` — one opaque string, no dots.
 ```
 
 `run.sh` creates the venv, installs dependencies whenever `requirements.txt`
-changes, reads your key from `.env`, and opens the page at `localhost:8000`.
+changes, reads your key from `.env`, and opens `localhost:8000` — the landing
+page at `/`, the conversation at `/chat`.
 
 ## How it works
 
@@ -76,7 +96,8 @@ Files:
 |---|---|
 | `persona.py` | Mr. Meter's prompt, the `write_poem` tool, `MAX_TURNS` |
 | `app.py` | FastAPI — sessions, SSE streaming, the poem handoff |
-| `static/index.html` | The whole UI — markup, styles, voice, avatars. No build step, no npm |
+| `static/landing.html` | The front page, built from the design file |
+| `static/index.html` | The chat UI — markup, styles, voice, avatars. No build step, no npm |
 | `poem.py` | The poet + the v1 CLI. `iter_poem`, `build_prompt`, `save_run` |
 
 ### Voice

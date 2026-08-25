@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #FBF6EE; }
+  a { color: #8A5A34; text-decoration: none; }
+  a:hover { color: #6D461F; }
+</style>
+</helmet>
+<div style="background: #FBF6EE; color: #241F1A; font-family: 'Instrument Sans', -apple-system, sans-serif; font-size: 16px; line-height: 1.55; padding: 72px 56px 120px;">
+  <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 88px;">
+
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; align-items: center; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #6E645A;">
+        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; color: #8A5A34;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
+        <span>Design system · v1</span>
+      </div>
+      <h1 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 64px; line-height: 1.05; letter-spacing: -0.02em; margin: 0; max-width: 18ch;">Mr.&nbsp;Meter</h1>
+      <p style="margin: 0; max-width: 56ch; font-size: 19px; color: #6E645A;">A poet you talk to. The system is built to feel like a gift being wrapped, not a journal being published: warm paper, brown ink, generous air, and verse always set in a serif that reads slowly.</p>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8A5A34; background: #F3E7D8; border-radius: 999px; padding: 7px 13px;">Warm</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8A5A34; background: #F3E7D8; border-radius: 999px; padding: 7px 13px;">Unhurried</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8A5A34; background: #F3E7D8; border-radius: 999px; padding: 7px 13px;">Handmade</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #8A5A34; background: #F3E7D8; border-radius: 999px; padding: 7px 13px;">Plain-spoken</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid #E8DFD1; padding-bottom: 12px;">
+        <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 30px; margin: 0;">Colour</h2>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">paper, ink, one warm accent</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #FBF6EE; border: 1px solid #E8DFD1;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Paper</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#FBF6EE</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #FFFDF9; border: 1px solid #E8DFD1;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Card</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#FFFDF9</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #F3E7D8;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Wash</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#F3E7D8</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #E8DFD1;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Rule</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#E8DFD1</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #8A5A34;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Ink brown — primary</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#8A5A34</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #90514C;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Ribbon — secondary</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#90514C</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #241F1A;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Ink</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#241F1A</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="height: 104px; border-radius: 12px; background: #6E645A;"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 500;">Ink soft</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">#6E645A</span></div>
+        </div>
+      </div>
+      <p style="margin: 0; max-width: 62ch; font-size: 15px; color: #6E645A;">One accent does the work. Ribbon appears only on a page that already has brown on it — never as a second button colour in the same view.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid #E8DFD1; padding-bottom: 12px;">
+        <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 30px; margin: 0;">Type</h2>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Newsreader for voice · Instrument Sans for interface</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Display / 64 / 400</span>
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 64px; line-height: 1.05; letter-spacing: -0.02em;">Someone you like</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Title / 30 / 400</span>
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 30px;">Onam, and the Sky Not Holding</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Verse / 19 / 1.75</span>
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 19px; line-height: 1.75; white-space: pre-line;">The bag stayed dry.
+We didn't.
+I'd go again tomorrow.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Lead / 19 / 1.5</span>
+          <span style="font-size: 19px; color: #6E645A;">He asks a few questions. You answer however you like.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Body / 16 / 1.55</span>
+          <span style="font-size: 16px;">Conversation text, bubbles, and everything in the app chrome.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">Label / 11 / mono</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">Saved · poems/20260816-174917.txt</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid #E8DFD1; padding-bottom: 12px;">
+        <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 30px; margin: 0;">Components</h2>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">as they appear in the app today</span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+        <button style="font: 500 16px 'Instrument Sans', sans-serif; border: 1px solid #8A5A34; background: #8A5A34; color: #FFFDF9; border-radius: 999px; padding: 13px 26px; cursor: pointer;">Talk to Mr. Meter</button>
+        <button style="font: 500 16px 'Instrument Sans', sans-serif; border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 999px; padding: 13px 26px; cursor: pointer;">Read a poem first</button>
+        <button style="font: 500 16px 'Instrument Sans', sans-serif; border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 10px; padding: 10px 14px; cursor: pointer;">Copy poem</button>
+        <button disabled="disabled" style="font: 500 16px 'Instrument Sans', sans-serif; border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 10px; padding: 10px 14px; opacity: .45;">Write it now</button>
+        <button title="Speak" style="border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 10px; padding: 9px 11px; line-height: 0; cursor: pointer;">
+          <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 3a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-5 0v-5A2.5 2.5 0 0 1 12 3z"></path><path d="M6 11a6 6 0 0 0 12 0"></path><path d="M12 17v3"></path></svg>
+        </button>
+        <button title="Listening" style="border: 1px solid #8A5A34; background: #8A5A34; color: #FFFDF9; border-radius: 10px; padding: 9px 11px; line-height: 0; cursor: pointer;">
+          <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 3a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-5 0v-5A2.5 2.5 0 0 1 12 3z"></path><path d="M6 11a6 6 0 0 0 12 0"></path><path d="M12 17v3"></path></svg>
+        </button>
+        <button title="Mute Mr. Meter" style="border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 10px; padding: 9px 11px; line-height: 0; cursor: pointer;">
+          <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 9.5a4 4 0 0 1 0 5"></path></svg>
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">Conversation</span>
+          <div style="display: flex; align-items: flex-end; gap: 9px;">
+            <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #FFFDF9; border: 1px solid #E8DFD1; color: #8A5A34;">
+              <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
+            </div>
+            <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; background: #FFFDF9; border: 1px solid #E8DFD1; border-bottom-left-radius: 4px;">Who shall we write this poem for?</div>
+          </div>
+          <div style="display: flex; align-items: flex-end; gap: 9px; flex-direction: row-reverse;">
+            <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #E8DFD1; color: #6E645A;">
+              <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+            </div>
+            <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; background: #8A5A34; color: #FFFDF9; border-bottom-right-radius: 4px;">My mother.</div>
+          </div>
+          <div style="color: #6E645A; font-size: 13px; margin-left: 39px;">Saved  poems/20260816-174917.txt</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">Poem card</span>
+          <div style="background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 16px; padding: 28px 30px; display: flex; flex-direction: column; gap: 14px;">
+            <span style="font-family: 'Newsreader', Georgia, serif; font-size: 24px;">Before the Answer</span>
+            <span style="font-family: 'Newsreader', Georgia, serif; font-size: 18px; line-height: 1.75; white-space: pre-line;">The word grandmother is a coat
+hung on a hook in a hall—
+you can tell from across the room
+how tall she is, and nothing else.</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">free verse · read aloud in his voice</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">Input</span>
+        <div style="max-width: 640px; display: flex; gap: 8px; align-items: flex-end;">
+          <div style="flex: 1; background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 12px; padding: 11px 13px; color: #6E645A;">Type a message, or tap the mic...</div>
+          <button style="font: 500 16px 'Instrument Sans', sans-serif; border: 1px solid #8A5A34; background: #8A5A34; color: #FFFDF9; border-radius: 10px; padding: 11px 16px; cursor: pointer;">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid #E8DFD1; padding-bottom: 12px;">
+        <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 30px; margin: 0;">Rules</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 14px; padding: 22px;">
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 21px;">Verse is always serif</span>
+          <span style="font-size: 15px; color: #6E645A;">Newsreader at 1.75 line-height, line breaks preserved. Never set a poem in the interface sans.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 14px; padding: 22px;">
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 21px;">No emoji, ever</span>
+          <span style="font-size: 15px; color: #6E645A;">His prompt forbids them. Line icons in currentColor, drawn at 1.35–1.7 stroke, are the only ornament.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 14px; padding: 22px;">
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 21px;">One question at a time</span>
+          <span style="font-size: 15px; color: #6E645A;">In copy as in conversation: one idea per screen, one button that matters, nothing racing the reader.</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 28px; flex-wrap: wrap; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6E645A;">
+        <span>radius: 10 / 12 / 14 / 16 / 999</span>
+        <span>rule: 1px #E8DFD1</span>
+        <span>column: 640px conversation · 1000px page</span>
+        <span>rhythm: 8 / 14 / 22 / 32 / 56 / 88</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

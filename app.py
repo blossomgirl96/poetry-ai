@@ -33,6 +33,7 @@ from persona import (
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(BASE_DIR, "static", "index.html")
+LANDING = os.path.join(BASE_DIR, "static", "landing.html")
 
 # Voice is optional. With no key the page falls back to silent text, so the
 # app never depends on ElevenLabs being reachable or paid for.
@@ -233,11 +234,19 @@ def run_turn(session, user_message, force=False):
 STREAM_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
 
+# No-store on both: each page is a single hand-edited file, and without this
+# Chrome keeps serving a stale copy after every change.
+NO_STORE = {"Cache-Control": "no-store, must-revalidate"}
+
+
 @app.get("/")
+def landing():
+    return FileResponse(LANDING, headers=NO_STORE)
+
+
+@app.get("/chat")
 def index():
-    # No-store, because the whole UI lives in this one file: without it Chrome
-    # keeps serving a stale page after every edit.
-    return FileResponse(INDEX, headers={"Cache-Control": "no-store, must-revalidate"})
+    return FileResponse(INDEX, headers=NO_STORE)
 
 
 @app.post("/session")

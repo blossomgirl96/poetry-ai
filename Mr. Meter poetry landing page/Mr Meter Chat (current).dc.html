@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; background: #faf7f2; }
+  a { color: #8a5a34; }
+  a:hover { color: #6d461f; }
+  @keyframes d { 0% { content: "" } 25% { content: "." } 50% { content: ".." } 75% { content: "..." } }
+</style>
+</helmet>
+<div style="background: #faf7f2; color: #1f1c18; font: 16px/1.55 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh;">
+  <header style="padding: 14px 20px; border-bottom: 1px solid #e4ddd2; display: flex; align-items: baseline; gap: 10px; flex: none;">
+    <h1 style="margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .01em;">Mr. Meter</h1>
+    <span style="color: #7a7167; font-size: 13px;">a poem for someone you like</span>
+    <div style="flex: 1;"></div>
+    <button title="Mute Mr. Meter" style="font: inherit; border: 1px solid #e4ddd2; background: #fff; color: inherit; border-radius: 10px; padding: 9px 11px; line-height: 0; cursor: pointer; white-space: nowrap;">
+      <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 9.5a4 4 0 0 1 0 5"></path></svg>
+    </button>
+  </header>
+
+  <div style="flex: 1; overflow-y: auto; padding: 24px 20px 8px;">
+    <div style="max-width: 640px; margin: 0 auto;">
+
+      <div style="display: flex; align-items: flex-end; gap: 9px; margin-bottom: 14px;">
+        <div title="Mr. Meter" style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #fff; border: 1px solid #e4ddd2; color: #8a5a34;">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path><path d="M15.6 6.6c-2 1.4-3.8 3.4-5.2 5.8" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity=".55"></path></svg>
+        </div>
+        <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 1px solid #e4ddd2; border-bottom-left-radius: 4px;">Hello, I'm Mr. Meter, your friendly poet! Tell me, who shall we write this poem for?</div>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 9px; margin-bottom: 14px; flex-direction: row-reverse;">
+        <div title="You" style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #e4ddd2; color: #7a7167;">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 17px; height: 17px; display: block;"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+        </div>
+        <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; background: #8a5a34; color: #fff; border-bottom-right-radius: 4px;">My mother. It's her birthday on Sunday.</div>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 9px; margin-bottom: 14px;">
+        <div title="Mr. Meter" style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #fff; border: 1px solid #e4ddd2; color: #8a5a34;">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path><path d="M15.6 6.6c-2 1.4-3.8 3.4-5.2 5.8" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity=".55"></path></svg>
+        </div>
+        <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 1px solid #e4ddd2; border-bottom-left-radius: 4px;">A birthday poem for your mother — what a good errand to be sent on. What does her voice sound like when she's pleased about something?</div>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 9px; margin-bottom: 14px; flex-direction: row-reverse;">
+        <div title="You" style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #e4ddd2; color: #7a7167;">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 17px; height: 17px; display: block;"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+        </div>
+        <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; background: #8a5a34; color: #fff; border-bottom-right-radius: 4px;">She goes up half an octave and says everyone's name twice. She talks to every shopkeeper about their family before she buys anything.</div>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; gap: 9px; margin-bottom: 14px;">
+        <div title="Mr. Meter" style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1px; background: #fff; border: 1px solid #e4ddd2; color: #8a5a34;">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path><path d="M15.6 6.6c-2 1.4-3.8 3.4-5.2 5.8" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity=".55"></path></svg>
+        </div>
+        <div style="max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 1px solid #e4ddd2; border-bottom-left-radius: 4px;">You've painted such a vivid picture. I'd love to capture it in some lines.</div>
+      </div>
+
+      <div style="margin: 26px 0; padding: 22px 0; border-top: 1px solid #e4ddd2; border-bottom: 1px solid #e4ddd2; font-family: Georgia, 'Iowan Old Style', serif; white-space: pre-wrap; font-size: 17px; line-height: 1.7;"><h2 style="font-size: 19px; margin: 0 0 .8em; font-weight: 600;">Onam, and the Sky Not Holding</h2>You asked the shopkeeper where he was from,
+and then about his sister's knee,
+while the rain came down like someone
+emptying buckets off a roof —
+and I stood there with my sandals full of water,
+watching you not hurry.
+
+We had come for Onam clothes.
+We left with a bag pressed to your chest
+like a baby, both of us
+soaked past the point where soaked matters,
+hair flat to our heads,
+laughing in that stupid way
+where you can't stop long enough to explain why.
+
+That day the street was a river
+and you kept talking to it —
+to the auto driver, to the woman under the awning,
+to me, over the noise,
+something about the colour being right after all.
+
+The bag stayed dry.
+We didn't.
+I'd go again tomorrow.</div>
+
+      <div style="color: #7a7167; font-size: 13px; margin: 6px 0 18px; margin-left: 39px;">Saved  poems/20260816-174917.txt</div>
+
+    </div>
+  </div>
+
+  <footer style="flex: none; border-top: 1px solid #e4ddd2; padding: 12px 20px 18px;">
+    <div style="max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end;">
+      <button style="font: inherit; border: 1px solid #e4ddd2; background: #fff; color: inherit; border-radius: 10px; padding: 10px 14px; cursor: pointer; white-space: nowrap;">Copy poem</button>
+      <button style="font: inherit; border: 1px solid #8a5a34; background: #8a5a34; color: #fff; border-radius: 10px; padding: 10px 14px; cursor: pointer; white-space: nowrap;">New poem</button>
+    </div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>
