@@ -17,10 +17,15 @@ The source design lives in `Mr. Meter poetry landing page/`. The `.dc.html`
 files carry design-tool wrappers (`<x-dc>`, `<sc-if>`, `support.js`); the built
 page strips those and points the placeholder anchors at `/chat`.
 
-Two things the design leaves open: the three cards under "Meet Mr. Meter" are
-hatched placeholders captioned *studio, desk detail* and so on — they want real
-photography. And the system is light-only; the dark palette in the chat is a
-mapping of the same roles, not something the designer specified.
+The design's three "Meet Mr. Meter" cards were hatched placeholders captioned
+*studio, desk detail* and so on, waiting on photography. They now hold line
+illustrations instead — two bubbles mid-conversation, a page of handwriting, the
+quill with sound coming off it — drawn in `currentColor` at the system's own
+1.35–1.7 stroke, which is the rule it gives for ornament. Swap them for photos
+whenever there are photos.
+
+One thing the design leaves open: it is light-only, so the dark palette in the
+chat is a mapping of the same roles rather than something the designer specified.
 
 ## What's new in v3
 
