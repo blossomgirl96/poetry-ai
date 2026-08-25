@@ -3,6 +3,33 @@
 Chat with Mr. Meter about someone you love. He writes them a free-verse poem,
 and reads it to you.
 
+## What's new in v3
+
+**Mr. Meter talks, and listens.** ElevenLabs voices him over a WebSocket the
+browser holds itself, so his replies are spoken as they stream and the poem is
+read stanza by stanza *while it's still being written* — the poem's own line
+breaks become the pauses. The microphone is Chrome's, which keeps live interim
+words appearing as you speak. Voice is optional: with no key configured the app
+is exactly the silent text app it was.
+
+**Dictation is punctuated before it's sent.** Browser speech recognition returns
+no punctuation and every "um", which is ugly to read and worse as the verbatim
+source material the poet sees. A one-second pass adds punctuation, drops fillers
+and repairs stumbles without changing your words.
+
+**Mr. Meter got quieter.** The instruction that made him volunteer an anecdote in
+every reply is gone, and the seven-angle question list collapsed to the two rules
+that were doing the work — open a different door each time, never twice from the
+same angle in a row.
+
+Things that had to be learned the hard way, all now handled: `eleven_v3` and
+`eleven_v3_conversational` are refused by the streaming socket (silently, with an
+abnormal close); free-tier accounts cannot use library voices via the API;
+"Write it now" mid-conversation ended the message list on an assistant turn,
+which Opus 5 rejects; and the microphone had to be closed by *every* exit from a
+turn, not just the mic button, or it transcribed Mr. Meter's own voice back into
+the box.
+
 ## Setup (once)
 
 ```bash
