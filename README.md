@@ -45,6 +45,11 @@ anything in his voice (headings, verse), Instrument Sans for interface, and IBM
 Plex Mono for small uppercase labels. The system's first rule — *never set a
 poem in the interface sans* — is why the poem is now Newsreader at 19/1.75.
 
+The hero shows a real session rather than invented copy — the five-turn
+conversation about someone's mother gardening in the rain, and the poem it
+produced, lifted verbatim from `poems/20260825-143847.json`. Both panes scroll,
+with a soft edge that appears only while there is more below.
+
 The source design lives in `Mr. Meter poetry landing page/`. The `.dc.html`
 files carry design-tool wrappers (`<x-dc>`, `<sc-if>`, `support.js`); the built
 page strips those and points the placeholder anchors at `/chat`.
