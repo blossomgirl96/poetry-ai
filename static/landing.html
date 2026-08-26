@@ -11,21 +11,6 @@
   body { margin: 0; background: #FBF6EE; }
   a { color: #8A5A34; text-decoration: none; }
   a:hover { color: #6D461F; }
-  /* Scroll the sample without a slab of chrome down the side of the card. */
-  .scroller {
-    overflow-y: auto; overscroll-behavior: contain;
-    scrollbar-width: thin; scrollbar-color: #DFD4C3 transparent;
-  }
-  .scroller::-webkit-scrollbar { width: 6px; }
-  .scroller::-webkit-scrollbar-track { background: transparent; }
-  .scroller::-webkit-scrollbar-thumb { background: #E4DACB; border-radius: 999px; }
-  .scroller:hover::-webkit-scrollbar-thumb { background: #CDBFAC; }
-  /* Fade the cut edge, but only while there is more below — otherwise the last
-     line of the poem sits permanently half-dissolved. */
-  .scroller.more {
-    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent);
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent);
-  }
   @media (max-width: 640px) {
     /* the design's 48px gutters are generous for a phone */
     [style*="padding: 22px 48px"], [style*="padding: 64px 48px 88px"],
@@ -55,62 +40,43 @@
       </div>
     </div>
 
-<div style="background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 18px; padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 14px;">
-      <div class="scroller" style="max-height: 268px; display: flex; flex-direction: column; gap: 12px; padding-right: 8px;">
-        <div style="display:flex;align-items:flex-end;gap:9px;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#FFFDF9;border:1px solid #E8DFD1;color:#8A5A34"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#FBF6EE;border:1px solid #E8DFD1;border-bottom-left-radius:4px">Hello, I&#x27;m Mr. Meter, your friendly poet! Pull up a chair — the kettle&#x27;s on. Tell me, who shall we write this poem for?</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;flex-direction:row-reverse;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E8DFD1;color:#6E645A"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#8A5A34;color:#FFFDF9;border-bottom-right-radius:4px">mom</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#FFFDF9;border:1px solid #E8DFD1;color:#8A5A34"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#FBF6EE;border:1px solid #E8DFD1;border-bottom-left-radius:4px">Moms are wonderful territory. What&#x27;s something she does that&#x27;s unmistakably her?</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;flex-direction:row-reverse;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E8DFD1;color:#6E645A"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#8A5A34;color:#FFFDF9;border-bottom-right-radius:4px">She is so hardworking - she&#x27;s working the plans in the garden even if its raining</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#FFFDF9;border:1px solid #E8DFD1;color:#8A5A34"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#FBF6EE;border:1px solid #E8DFD1;border-bottom-left-radius:4px">Rain and all — that&#x27;s a stubborn kind of love, tending things whatever the weather. Is there a moment out there in the garden the two of you shared that&#x27;s stayed with you?</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;flex-direction:row-reverse;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E8DFD1;color:#6E645A"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#8A5A34;color:#FFFDF9;border-bottom-right-radius:4px">me sitting in the verandah and watching her - her fixing the plants with our dog following her aorund</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#FFFDF9;border:1px solid #E8DFD1;color:#8A5A34"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#FBF6EE;border:1px solid #E8DFD1;border-bottom-left-radius:4px">That&#x27;s a lovely picture — her at work, the dog trailing behind, you watching from the dry side of it all. When she reads this, what would you like it to leave her feeling?</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;flex-direction:row-reverse;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E8DFD1;color:#6E645A"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#8A5A34;color:#FFFDF9;border-bottom-right-radius:4px">nostalgic, warm</div></div>
-        <div style="display:flex;align-items:flex-end;gap:9px;"><div style="flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#FFFDF9;border:1px solid #E8DFD1;color:#8A5A34"><svg viewBox="0 0 24 24" style="width:17px;height:17px;display:block"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg></div><div style="max-width:82%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.5;background:#FBF6EE;border:1px solid #E8DFD1;border-bottom-left-radius:4px">That gives me plenty to work with — let&#x27;s bring that rainy garden to life in verse.</div></div>
-      </div>
-      <div style="border-top: 1px solid #E8DFD1; padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
-        <span style="font-family: 'Newsreader', Georgia, serif; font-size: 21px;">From the Dry Side</span>
-        <div class="scroller" style="max-height: 210px; padding-right: 8px;">
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 17px; line-height: 1.75; white-space: pre-line;">The rain never counted as weather to you.
-It came down and you went out,
-knees in the dirt, hands going
-into the wet dark of it,
-straightening a stem that had given up,
-pressing the soil back around a root
-like you were tucking someone in.
-
-I stayed on the verandah where it was dry.
-That was my job, apparently —
-to watch you from the good chair,
-to see the water bead along your sleeve
-and you not once look up at the sky
-to ask it anything.
-
-And the dog. Always the dog,
-three steps behind you the whole afternoon,
-sitting when you sat,
-moving when you moved,
-soaked through and pleased about it,
-as though following you were a kind of work
-he&#x27;d been hired for.
-
-I could have brought you an umbrella.
-I don&#x27;t think you&#x27;d have taken it.
-
-I still see the garden that way —
-you bent over it, the dog waiting,
-the rain doing what rain does,
-and me on the verandah,
-watching the whole thing happen
-and not knowing yet
-that I&#x27;d want it back.</span>
+    <div style="background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 18px; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: flex-end; gap: 9px;">
+        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #FFFDF9; border: 1px solid #E8DFD1; color: #8A5A34;">
+          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">
-          <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: #8A5A34;"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 9.5a4 4 0 0 1 0 5"></path></svg>
-          <span>speaking, stanza by stanza</span>
-        </div>
+        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #FBF6EE; border: 1px solid #E8DFD1; border-bottom-left-radius: 4px; font-size: 15px;">Hello, I'm Mr. Meter. Who shall we write this poem for?</div>
       </div>
+      <div style="display: flex; align-items: flex-end; gap: 9px; flex-direction: row-reverse;">
+        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #E8DFD1; color: #6E645A;">
+          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+        </div>
+        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #8A5A34; color: #FFFDF9; border-bottom-right-radius: 4px; font-size: 15px;">My mother. It's her birthday on Sunday.</div>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 9px;">
+        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #FFFDF9; border: 1px solid #E8DFD1; color: #8A5A34;">
+          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
+        </div>
+        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #FBF6EE; border: 1px solid #E8DFD1; border-bottom-left-radius: 4px; font-size: 15px;">What does her voice do when she's pleased about something?</div>
+      </div>
+      
+        <div style="border-top: 1px solid #E8DFD1; margin-top: 8px; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 20px;">Onam, and the Sky Not Holding</span>
+          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 17px; line-height: 1.75; white-space: pre-line;">…and I stood there
+with my sandals full of water,
+watching you not hurry.
+
+The bag stayed dry.
+We didn't.
+I'd go again tomorrow.</span>
+          <div style="display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">
+            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: #8A5A34;"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 9.5a4 4 0 0 1 0 5"></path></svg>
+            <span>speaking, stanza by stanza</span>
+          </div>
+        </div>
+      
     </div>
-</div>
+  </div>
 
   <div id="meet" style="border-top: 1px solid #E8DFD1;">
     <div style="max-width: 1200px; margin: 0 auto; padding: 84px 48px; display: flex; flex-direction: column; gap: 40px;">
@@ -175,16 +141,5 @@ that I&#x27;d want it back.</span>
     
   </div>
 </div>
-<script>
-  // The sample conversation and poem scroll; show a soft edge while they can.
-  document.querySelectorAll('.scroller').forEach((el) => {
-    const sync = () =>
-      el.classList.toggle('more', el.scrollTop + el.clientHeight < el.scrollHeight - 2);
-    sync();
-    el.addEventListener('scroll', sync, { passive: true });
-    addEventListener('resize', sync);
-    if (document.fonts) document.fonts.ready.then(sync);
-  });
-</script>
 </body>
 </html>
