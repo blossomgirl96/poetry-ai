@@ -229,6 +229,19 @@ with its answer, the resolved form, the assembled user prompt, the poem,
 `stop_reason`, and token usage. Because the questions are recorded by key, sidecars
 written before a question changed still say which question was actually asked.
 
+Every sidecar carries `rating` — `null` until someone presses a thumb under the
+poem, then `"up"` or `"down"`. Pressing the same thumb again takes it back. The
+rating is written onto the poem's own sidecar rather than a separate file, so a
+poem and what someone thought of it stay together:
+
+```bash
+# what landed and what didn't
+jq -r '.rating // "unrated"' poems/*.json | sort | uniq -c
+
+# read the ones that landed
+jq -r 'select(.rating=="up") | .poem' poems/*.json
+```
+
 Chat runs **add** keys rather than changing any, so every recipe below works across
 a mixed v1/v2 corpus: `mode` (`cli` | `chat`), `persona_prompt` + its own
 `persona_prompt_sha256`, the full `transcript`, `turns`, `chat_model`, and

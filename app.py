@@ -140,6 +140,8 @@ class Session:
     title: str = ""
     answers: dict = field(default_factory=dict)
     wash: dict | None = None      # painted once, so every render matches
+    meta_path: str = ""           # the sidecar, so a rating can find it
+    rating: str | None = None
     chat_usage: dict = field(default_factory=lambda: {"input_tokens": 0, "output_tokens": 0})
 
 
@@ -286,6 +288,7 @@ def run_turn(session, user_message, force=False):
             chat_model=poem.MODEL,
             chat_usage=session.chat_usage,
         )
+        session.meta_path = meta_path
         yield sse(
             type="poem_end",
             poem_path=os.path.relpath(poem_path, BASE_DIR),
@@ -772,6 +775,11 @@ class CardIn(BaseModel):
     session_id: str
 
 
+class RateIn(BaseModel):
+    session_id: str
+    rating: str | None = None   # "up", "down", or null to take it back
+
+
 @app.post("/poem-card")
 def poem_card(body: CardIn):
     """A printable page for the finished poem, washed in colours drawn from it.
@@ -801,3 +809,19 @@ def poem_card_preview(session_id: str):
     caption = f"written for {subject}" if subject else "written by Mr. Meter"
     page = render_card(session.title, session.poem, wash, caption)
     return HTMLResponse(page, headers=NO_STORE)
+
+
+@app.post("/rate")
+def rate(body: RateIn):
+    """Record what they thought of the poem, onto the poem's own sidecar."""
+    if body.rating not in (None, "up", "down"):
+        raise HTTPException(status_code=400, detail="rating must be up, down or null")
+    session = get_session(body.session_id)
+    if not session.meta_path:
+        raise HTTPException(status_code=409, detail="no saved poem")
+    try:
+        poem.set_rating(session.meta_path, body.rating)
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"could not save: {e}")
+    session.rating = body.rating
+    return {"rating": body.rating}

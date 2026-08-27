@@ -192,6 +192,8 @@ def save_run(
             "output_tokens": message.usage.output_tokens,
         },
         "mode": mode,
+        # None until the person says; "up" or "down" after.
+        "rating": None,
     }
 
     if mode == "chat":
@@ -272,3 +274,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def set_rating(meta_path, rating):
+    """Record a thumbs up or down against a saved poem.
+
+    Rewrites the sidecar in place rather than keeping ratings in a second file,
+    so a poem and what someone thought of it stay together.
+    """
+    with open(meta_path) as f:
+        record = json.load(f)
+    record["rating"] = rating
+    with open(meta_path, "w") as f:
+        json.dump(record, f, indent=2, ensure_ascii=False)
+    return record["rating"]
