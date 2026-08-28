@@ -833,12 +833,18 @@ async function tidyText() {
       signal: ctrl.signal,
     });
     clearTimeout(bail);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.text) input.value = data.text;
-    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.text) input.value = data.text;
   } catch (e) {
     input.value = raw;   // timed out or failed — send what they actually said
+    // Falling back silently is right for a blip, but it hid a broken endpoint
+    // for several sessions: the dictation just arrived raw and looked like a
+    // formatting quirk. Say it once, then stay quiet.
+    if (!window.__tidyWarned) {
+      window.__tidyWarned = true;
+      note('Sending your words as spoken — the clean-up step is not responding.', true);
+    }
   }
   input.disabled = false;
   input.placeholder = held;
