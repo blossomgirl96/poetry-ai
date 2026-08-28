@@ -688,7 +688,9 @@ function makeSpeaker(mode) {
   let buf = '';
   return {
     feed(chunk) {
-      buf += chunk;
+      // Expanded before the boundary search, not after: the full stop in
+      // "Mr." is what makes it look like the end of a sentence.
+      buf = sayable(buf + chunk);
       let m;
       while ((m = boundary.exec(buf))) {
         const end = m.index + m[0].length;
@@ -708,6 +710,23 @@ function makeSpeaker(mode) {
       await drained();
     },
   };
+}
+
+// He is Mr. Meter on the page and Mister Meter out loud. The abbreviating full
+// stop reads as the end of a sentence — to the chunker here, which would flush
+// mid-name, and to ElevenLabs, which pauses on it. Spelling the title out costs
+// nothing and removes both.
+const SPOKEN = [
+  [/\bMr\.(?=\s)/g, 'Mister'],
+  [/\bMrs\.(?=\s)/g, 'Missus'],
+  [/\bMs\.(?=\s)/g, 'Miz'],
+  [/\bDr\.(?=\s)/g, 'Doctor'],
+  [/\bSt\.(?=\s)/g, 'Saint'],
+  [/\bProf\.(?=\s)/g, 'Professor'],
+];
+
+function sayable(s) {
+  return SPOKEN.reduce((out, [re, word]) => out.replace(re, word), s);
 }
 
 // The poem occasionally arrives with a Markdown heading; spoken aloud that

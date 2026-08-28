@@ -184,6 +184,12 @@ for and it streams as before.
 buffered and flushed at blank lines, so the poem's own line breaks become the
 pauses, and speech starts long before the last stanza exists.
 
+He is *Mr. Meter* on the page and *Mister Meter* out loud. The abbreviating full
+stop reads as the end of a sentence twice over — to the chunker, which would
+flush mid-name and send "Meter…" as its own generation, and to ElevenLabs, which
+pauses on it. Honorifics are spelled out before the text is chunked, so neither
+happens. `SPOKEN` in `static/index.html` holds the list.
+
 Two knobs worth knowing, both in `static/index.html`:
 
 - `chunk_length_schedule` — how much text ElevenLabs buffers before generating.
