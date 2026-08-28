@@ -171,6 +171,15 @@ short-lived, single-use token server-side, and the page opens
 `wss://.../stream-input` with it — so Claude's text goes straight from this page
 into speech and no audio ever transits FastAPI. The API key stays on the server.
 
+**The poem waits until he has stopped talking.** The handoff line and the poem
+arrive in the same turn, one after the other, so the poem used to start writing
+itself on screen while Mr. Meter was still reading his last sentence aloud. It
+now buffers until his speech has actually finished — every byte delivered by
+ElevenLabs *and* the last of it played out, which are not the same moment, since
+audio is scheduled ahead on a running cursor. Then it catches up a few characters
+at a time rather than landing as a block. With voice off there is nothing to wait
+for and it streams as before.
+
 **The poem is spoken stanza by stanza while it's still being written.** Deltas are
 buffered and flushed at blank lines, so the poem's own line breaks become the
 pauses, and speech starts long before the last stanza exists.

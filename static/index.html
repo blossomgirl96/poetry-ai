@@ -242,6 +242,59 @@ async function turn(url, body) {
   let bot = null, poemEl = null, thinking = null;
   let chatVoice = null, poemVoice = null;   // one utterance each
 
+  // While Mr. Meter is still speaking his handoff line, the poem piles up here
+  // instead of being written over him. `ending` holds the poem_end payload so
+  // the title split and the save note also wait for the queue to empty.
+  let queue = '', open = false, timer = null, ending = null;
+
+  function finalise(ev) {
+    // SYSTEM guarantees "title, blank line, poem" — split once everything has
+    // arrived rather than fighting token boundaries mid-flight.
+    const raw = poemEl.textContent;
+    const br = raw.indexOf('\n\n');
+    const head = br > 0 ? raw.slice(0, br).trim() : '';
+    const rest = br > 0 ? raw.slice(br + 2) : raw;
+    // Emphasis arrives as *asterisks*; show it as emphasis. Text is set via a
+    // text node first, so nothing from the poem is ever parsed as markup.
+    poemEl.textContent = '';
+    const body = document.createElement('span');
+    body.textContent = rest.replace(/^#{1,6}\s*/gm, '');
+    body.innerHTML = body.innerHTML.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+    poemEl.appendChild(body);
+    if (head) {
+      const h2 = document.createElement('h2');
+      h2.textContent = head.replace(/^#{1,6}\s*/, '');
+      poemEl.prepend(h2);
+    }
+    if (ev.stop_reason === 'max_tokens') {
+      note('That one hit the token ceiling before it finished.', true);
+    }
+    wrap.appendChild(ratingRow());
+    note('Saved  ' + ev.poem_path);
+    done = true;
+    finish();
+  }
+
+  // Let the queue out a few characters at a time; released in one go it would
+  // land as a block of text rather than something being written.
+  function release() {
+    if (!open || timer) return;
+    timer = setInterval(() => {
+      if (!queue.length) {
+        clearInterval(timer);
+        timer = null;
+        if (ending) { const ev = ending; ending = null; finalise(ev); }
+        return;
+      }
+      const was = atBottom();
+      const bite = queue.slice(0, 6);
+      queue = queue.slice(6);
+      poemEl.textContent += bite;
+      if (poemVoice) poemVoice.feed(bite);
+      scroll(was);
+    }, 16);
+  }
+
   try {
     await stream(url, body, (ev) => {
       const was = atBottom();
@@ -259,7 +312,7 @@ async function turn(url, body) {
           break;
         case 'chat_end':
           if (thinking) { thinking.parentElement.remove(); thinking = null; }
-          if (chatVoice) { chatVoice.end(); chatVoice = null; }
+          if (chatVoice) chatVoice.end();   // kept around: the poem waits on it
           break;
         case 'poem_start':
           poemVoice = makeSpeaker('poem');
@@ -268,40 +321,22 @@ async function turn(url, body) {
           poemEl.textContent = '';
           wrap.appendChild(poemEl);
           scroll(was);
+          // The poem holds until he has actually stopped speaking, then catches up.
+          (chatVoice ? chatVoice.spoken() : Promise.resolve()).then(() => {
+            open = true;
+            chatVoice = null;
+            release();
+          });
           break;
         case 'poem_delta':
-          poemEl.textContent += ev.text;
-          if (poemVoice) poemVoice.feed(ev.text);
-          scroll(was);
+          queue += ev.text;
+          release();
           break;
-        case 'poem_end': {
-          // SYSTEM guarantees "title, blank line, poem" — split once the stream
-          // has closed rather than fighting token boundaries mid-flight.
-          const raw = poemEl.textContent;
-          const br = raw.indexOf('\n\n');
-          const head = br > 0 ? raw.slice(0, br).trim() : '';
-          const rest = br > 0 ? raw.slice(br + 2) : raw;
-          // Emphasis arrives as *asterisks*; show it as emphasis. Text is set
-          // via a text node first, so nothing from the poem is ever parsed.
-          poemEl.textContent = '';
-          const body = document.createElement('span');
-          body.textContent = rest.replace(/^#{1,6}\s*/gm, '');
-          body.innerHTML = body.innerHTML.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
-          poemEl.appendChild(body);
-          if (head) {
-            const h = document.createElement('h2');
-            h.textContent = head.replace(/^#{1,6}\s*/, '');
-            poemEl.prepend(h);
-          }
-          if (ev.stop_reason === 'max_tokens') {
-            note('That one hit the token ceiling before it finished.', true);
-          }
-          wrap.appendChild(ratingRow());
-          note('Saved  ' + ev.poem_path);
-          done = true;
-          finish();
+        case 'poem_end':
+          // Held back if the poem is still spooling out; release() calls it.
+          if (open && !queue.length && !timer) finalise(ev);
+          else ending = ev;
           break;
-        }
         case 'expired':
           note('That conversation expired — start a new one.', true);
           done = true;
@@ -318,6 +353,8 @@ async function turn(url, body) {
     note('Lost the connection: ' + e.message, true);
   }
   if (chatVoice) chatVoice.end();
+  // The connection is done, but the poem may still be spooling out behind him.
+  while (queue.length || timer || ending) await new Promise((r) => setTimeout(r, 60));
   if (poemVoice) poemVoice.end();
   setBusy(false);
 }
@@ -509,6 +546,15 @@ function unlockAudio() {
 }
 document.addEventListener('click', () => { ctx(); unlockAudio(); }, { once: true });
 
+// Audio is scheduled ahead on a running cursor, so "delivered" is not the same
+// as "heard". This waits for the last scheduled chunk to finish.
+function drained() {
+  if (!audioCtx || !voiceOn) return Promise.resolve();
+  const left = playCursor - audioCtx.currentTime;
+  if (left <= 0.05) return Promise.resolve();
+  return new Promise((r) => setTimeout(r, left * 1000 + 80));
+}
+
 function stopAudio() {
   liveSources.forEach((s) => { try { s.stop(); } catch (e) {} });
   liveSources = [];
@@ -546,12 +592,15 @@ function playPcm(b64) {
 function makeVoice(mode) {
   const cfg = VOICE_MODES[mode];
   let ws = null, ready = null, dead = !voiceOn || voiceBroken, gotAudio = false;
+  // Resolves when ElevenLabs has sent the last of this utterance's audio.
+  let allSent;
+  const delivered = new Promise((r) => { allSent = r; });
 
   async function open() {
     if (dead) return;
     try {
       const res = await fetch('/voice-token', { method: 'POST' });
-      if (!res.ok) { dead = true; voiceBroken = true; return; }
+      if (!res.ok) { dead = true; voiceBroken = true; allSent(); return; }
       const { token, voice_id } = await res.json();
       const url = WS_BASE + '/' + voice_id + '/stream-input'
         + '?model_id=' + cfg.model
@@ -574,19 +623,21 @@ function makeVoice(mode) {
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.audio) { gotAudio = true; playPcm(msg.audio); return; }
+        if (msg.isFinal) { allSent(); return; }
         // ElevenLabs reports config problems (bad voice id, unknown model) as a
         // message on the socket, not an HTTP error. Say so once rather than
         // leaving the user wondering why it's silent.
         if (msg.error) {
-          dead = true; voiceBroken = true;
+          dead = true; voiceBroken = true; allSent();
           if (!window.__voiceWarned) {
             window.__voiceWarned = true;
             note('Voice off — ' + (msg.message || msg.error), true);
           }
         }
       };
-      ws.onerror = () => { dead = true; };
+      ws.onerror = () => { dead = true; allSent(); };
       ws.onclose = (e) => {
+        allSent();
         // 1006 with nothing received means the socket was refused outright —
         // an unsupported model does this, with no error message to report.
         if (e.code !== 1000 && !gotAudio && !window.__voiceWarned) {
@@ -609,6 +660,12 @@ function makeVoice(mode) {
       await started;
       if (dead || !ws || ws.readyState !== WebSocket.OPEN) return;
       ws.send(JSON.stringify({ text: text + ' ', flush: !!flush }));
+    },
+    // Resolves once every byte of this utterance has been sent back.
+    async spoken() {
+      await started;
+      if (dead) return;
+      await delivered;
     },
     async close() {
       if (dead) return;
@@ -643,6 +700,12 @@ function makeSpeaker(mode) {
       if (buf.trim()) v.say(stripMarkup(buf), true);
       buf = '';
       v.close();
+    },
+    // Resolves when this utterance has been fully spoken out loud — every byte
+    // delivered, and the last of it played.
+    async spoken() {
+      await v.spoken();
+      await drained();
     },
   };
 }
