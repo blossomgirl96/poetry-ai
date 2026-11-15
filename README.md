@@ -3,6 +3,43 @@
 Chat with Mr. Meter about someone you love. He writes them a free-verse poem,
 and reads it to you.
 
+## What's new in v5
+
+**The card's picture is a different kind of picture per poem.** v4 painted every
+card with one primitive — blurred ellipses on off-white — and Haiku reached for
+the same sepia hexes almost every time (`#8B7355` in four of six test poems), so
+the downloads looked alike. Now (`wash.py`):
+
+- Sonnet 5.5 art-directs: it first names two to four concrete things in the poem
+  and the colour each actually is, then picks one of eight styles — watercolour,
+  ink, colourfield, horizon, contour, riso, night, photogram — and builds the
+  palette from those images. Tan and sepia are ruled out unless the poem is
+  about wood, tea, sand or old photographs.
+- Each style has its own SVG renderer, seeded from the poem, so the same poem
+  always draws the same picture. Different styles look different even in the
+  same colours, which no prompt change achieved with one primitive.
+- The text column is veiled per style so the poem stays readable; the sun or
+  moon is kept to one side of it; night and photogram are dark sheets and flip
+  the text to light ink.
+- On screen the picture tiles one A4 sheet at a time down the poem, as print
+  repeats it per page. Stretching it to the whole poem cropped the sides.
+- Filters are applied per group, not per shape, and there's no paper-grain
+  layer: Chrome rasterises filtered SVG at print resolution, and per-shape
+  filters plus grain produced 10–35 MB PDFs. Cards now print at 0.1–3 MB.
+
+The art direction takes about 4–5 s (was ~1 s on Haiku), once per poem.
+
+**Painted by an image model when `OPENAI_API_KEY` is set.** Sonnet's art
+direction also writes an `image_prompt` (the poem's own objects, in the chosen
+medium, kept to the edges with the middle left as bare paper), and `gpt-image-2`
+paints it: portrait, medium quality, JPEG at 85, about 200 KB. A paper-coloured
+veil over the text column keeps the poem readable whatever comes back. Painting
+takes 20–30 s, so it starts in the background the moment the poem is written
+(`prefetch_wash`) rather than on the Download click; a lock makes the click wait
+for that run instead of starting a second one. Without the key, or if painting
+fails, the card falls back to the drawn SVG styles above, and a failure isn't
+cached, so the next click tries again. Failures are logged as `[wash]` lines.
+
 ## What's new in v4
 
 **Download the poem as a painted card.** "Copy poem" is now "Download poem": the

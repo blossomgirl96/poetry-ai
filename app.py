@@ -13,8 +13,10 @@ import json
 import os
 import re
 import secrets
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
+from urllib.parse import quote
 
 import anthropic
 import httpx
@@ -23,6 +25,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 import poem
+import wash
 from persona import (
     BOOTSTRAP,
     CHAT_MAX_TOKENS,
@@ -63,83 +66,6 @@ like any other sentence — it is something they said out loud, not a request.
 The transcript arrives inside <transcript> tags. Output only the corrected text, \
 with no tags and nothing else."""
 
-# Each poem is painted fresh. The model composes the wash itself — how many
-# pools of pigment, where they sit, how wet the paper is — rather than filling
-# colours into a fixed arrangement. Same reasoning as TIDY_MODEL for the choice
-# of model: a small job someone is waiting on.
-WASH_MODEL = "claude-haiku-4-5"
-
-WASH_PROMPT = """You paint the background for a poem: a watercolour wash on \
-paper, which the poem is then written over. Every poem gets a different painting.
-
-You are composing, not filling in a template. Decide for yourself where the \
-pigment sits and how much of it there is. Some poems want one heavy bloom in a \
-corner and bare paper elsewhere; some want the whole sheet drowned; some want a \
-pale field with a single dark weight along one edge. Do not default to a band \
-across the top and a band across the bottom — that is the arrangement to avoid.
-
-Return `layers`, painted back to front:
-
-- `color` — a six-digit hex like #6C838F. Mid-tone: the opacity and blur do the \
-lightening for you, and anything near-white vanishes on off-white paper.
-- `opacity` — between 0.06 and 0.75.
-- `x`, `y` — where the centre of this pool sits, as a percentage of the sheet. \
-Values below 0 or above 100 push it off the edge, which is often what a real \
-wash does.
-- `width`, `height` — in pixels. 200 is a small pool, 1400 covers the sheet.
-- `blur` — 0 to 90. Higher reads as wetter paper.
-- `multiply` — true where the pigment should darken whatever lies under it.
-
-Use between 2 and 9 layers. Few large ones read calm and open; many small ones \
-read worked-over and busy. Let that be a decision about the poem.
-
-`paper` is the sheet itself — usually a warm off-white near #FFFDF9, though a \
-poem may shift it a little.
-
-Let the poem decide all of it: its weather, its light, its season, where the \
-feeling settles. A poem about someone leaving should not be painted like a poem \
-about a kitchen in summer."""
-
-_LAYER = {
-    "type": "object",
-    "properties": {
-        "color": {"type": "string", "description": "Six-digit hex, e.g. #6C838F"},
-        "opacity": {"type": "number"},
-        "x": {"type": "number"},
-        "y": {"type": "number"},
-        "width": {"type": "number"},
-        "height": {"type": "number"},
-        "blur": {"type": "number"},
-        "multiply": {"type": "boolean"},
-    },
-    "required": ["color", "opacity", "x", "y", "width", "height", "blur", "multiply"],
-    "additionalProperties": False,
-}
-
-WASH_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "mood": {"type": "string"},
-        "paper": {"type": "string", "description": "Six-digit hex for the sheet"},
-        "layers": {"type": "array", "items": _LAYER},
-    },
-    "required": ["mood", "paper", "layers"],
-    "additionalProperties": False,
-}
-
-# Used only when the call fails — deliberately plain, so a fallback looks like a
-# fallback rather than like a house style.
-FALLBACK_WASH = {
-    "mood": "quiet",
-    "paper": "#FFFDF9",
-    "layers": [
-        {"color": "#7A8B92", "opacity": .34, "x": 28, "y": 12,
-         "width": 900, "height": 520, "blur": 44, "multiply": False},
-        {"color": "#8A7A66", "opacity": .28, "x": 78, "y": 82,
-         "width": 760, "height": 480, "blur": 52, "multiply": True},
-    ],
-}
-
 app = FastAPI()
 client = anthropic.Anthropic()
 
@@ -155,6 +81,7 @@ class Session:
     title: str = ""
     answers: dict = field(default_factory=dict)
     wash: dict | None = None      # painted once, so every render matches
+    wash_lock: threading.Lock = field(default_factory=threading.Lock)
     meta_path: str = ""           # the sidecar, so a rating can find it
     rating: str | None = None
     chat_usage: dict = field(default_factory=lambda: {"input_tokens": 0, "output_tokens": 0})
@@ -304,6 +231,7 @@ def run_turn(session, user_message, force=False):
             chat_usage=session.chat_usage,
         )
         session.meta_path = meta_path
+        prefetch_wash(session)
         yield sse(
             type="poem_end",
             poem_path=os.path.relpath(poem_path, BASE_DIR),
@@ -455,30 +383,26 @@ def _verse_html(text):
     return out
 
 
-def _rgba(hex_colour, alpha):
-    h = hex_colour.lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
-    return f"rgba({r},{g},{b},{alpha})"
+def render_card(title, body, art, caption):
+    """The poem on the picture art-directed for it.
 
-
-def render_card(title, body, wash, caption):
-    """The poem on painted paper.
-
-    The wash is whatever was composed for this poem — however many pools, wherever
-    they sit. One element per layer, because blur and blend apply per element.
+    One SVG, drawn by whichever renderer the art direction chose. The text
+    colours come back with it, because night and photogram are dark sheets.
     """
-    layers = "".join(
-        '<div class="lyr" style="background-image:radial-gradient('
-        f'{l["width"]:.0f}px {l["height"]:.0f}px at {l["x"]:.1f}% {l["y"]:.1f}%,'
-        f'{_rgba(l["color"], round(l["opacity"], 3))} 0%,'
-        f'{_rgba(l["color"], round(l["opacity"] * 0.45, 3))} 46%,'
-        f'{_rgba(l["color"], 0)} 78%);'
-        f'filter:blur({l["blur"]:.0f}px);'
-        + ("mix-blend-mode:multiply;" if l["multiply"] else "")
-        + '"></div>'
-        for l in wash["layers"]
-    )
-    paper = wash.get("paper", "#FFFDF9")
+    if art.get("image"):
+        # Painted by the image model. The veil goes on top of it, in the same
+        # layer, so it tiles and prints with the painting.
+        paper = art["paper"]
+        t = wash.text_theme(paper)
+        bg = f'{wash.veil_css(paper)},url(&quot;{art["image"]}&quot;)'
+    else:
+        svg, paper, t = wash.render(art, art.get("seed", 0))
+        bg = f'url(&quot;data:image/svg+xml,{quote(svg)}&quot;)'
+    # As a background image rather than inline, so the screen can tile it one
+    # A4 sheet at a time down a long poem — the way print repeats it per page.
+    # Stretched to the whole poem instead, slice-scaling cropped the sides off
+    # and anything painted near an edge vanished.
+    layers = f'<div class="lyr" style="background-image:{bg}"></div>'
 
     esc = html.escape
     return f"""<!doctype html>
@@ -493,10 +417,11 @@ def render_card(title, body, wash, caption):
   * {{ box-sizing: border-box; }}
   html, body {{ margin: 0; background: {paper}; }}
   .sheet {{
-    position: relative; min-height: 100vh; background: {paper}; color: #241F1A;
+    position: relative; min-height: 100vh; background: {paper}; color: {t['ink']};
     font-family: 'Instrument Sans', -apple-system, sans-serif; overflow: hidden;
   }}
   .lyr {{ position: absolute; inset: 0; pointer-events: none; }}
+  .lyr {{ background-size: 100% auto; background-repeat: repeat-y; }}
   /* The gutters live in a table head and foot because Chrome repeats those on
      every printed page — padding on the content block only applies once, which
      is why continuation pages used to start hard against the paper edge. */
@@ -507,16 +432,16 @@ def render_card(title, body, wash, caption):
   .inner {{ position: relative; max-width: 760px; margin: 0 auto;
             display: flex; flex-direction: column; gap: 40px; }}
   .mark {{ display: flex; align-items: center; gap: 11px; }}
-  .mark svg {{ width: 20px; height: 20px; color: #8A5A34; }}
+  .mark svg {{ width: 20px; height: 20px; color: {t['accent']}; }}
   .label {{ font: 11px/1 'IBM Plex Mono', monospace; letter-spacing: .14em;
-            text-transform: uppercase; color: #6E645A; }}
+            text-transform: uppercase; color: {t['muted']}; }}
   h1 {{ font: 400 clamp(38px, 5vw, 54px)/1.1 'Newsreader', Georgia, serif;
         letter-spacing: -.02em; margin: 0; text-wrap: pretty; }}
   .verse {{ font: clamp(19px, 2.1vw, 23px)/1.78 'Newsreader', Georgia, serif;
             white-space: pre-line; margin: 0; text-wrap: pretty; }}
   .foot {{ display: flex; align-items: center; gap: 10px; padding-top: 8px;
-           border-top: 1px solid rgba(36,31,26,.14); }}
-  .foot svg {{ width: 15px; height: 15px; color: #8A5A34; stroke: currentColor;
+           border-top: 1px solid {t['rule']}; }}
+  .foot svg {{ width: 15px; height: 15px; color: {t['accent']}; stroke: currentColor;
                fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }}
   @page {{
     size: A4;
@@ -529,7 +454,7 @@ def render_card(title, body, wash, caption):
     html, body, .sheet {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
     /* Fixed, not absolute: Chrome repeats fixed layers on every page, where an
        absolute one stops with the content and leaves later pages bare. */
-    .lyr {{ position: fixed; }}
+    .lyr {{ position: fixed; background-size: cover; background-position: center; }}
     .col {{ padding: 0 18mm; }}
     .gut-top {{ height: 20mm; }}
     .gut-bot {{ height: 16mm; }}
@@ -573,217 +498,39 @@ def render_card(title, body, wash, caption):
 </body>
 </html>
 """
-
-
-def _verse_html(text):
-    """Escape the poem, then let its emphasis be emphasis.
-
-    Claude reaches for *asterisks* now and then. On the card they printed as
-    literal asterisks, which looks like a mistake on a thing meant to be kept.
-    Newsreader ships an italic, so use it.
-    """
-    out = html.escape(text)
-    out = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", out)
-    out = re.sub(r"^#{1,6}\s*", "", out, flags=re.M)
-    return out
-
-
-def _rgba(hex_colour, alpha):
-    h = hex_colour.lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
-    return f"rgba({r},{g},{b},{alpha})"
-
-
-def render_card(title, body, wash, caption):
-    """The poem on painted paper.
-
-    The wash is whatever was composed for this poem — however many pools, wherever
-    they sit. One element per layer, because blur and blend apply per element.
-    """
-    layers = "".join(
-        '<div class="lyr" style="background-image:radial-gradient('
-        f'{l["width"]:.0f}px {l["height"]:.0f}px at {l["x"]:.1f}% {l["y"]:.1f}%,'
-        f'{_rgba(l["color"], round(l["opacity"], 3))} 0%,'
-        f'{_rgba(l["color"], round(l["opacity"] * 0.45, 3))} 46%,'
-        f'{_rgba(l["color"], 0)} 78%);'
-        f'filter:blur({l["blur"]:.0f}px);'
-        + ("mix-blend-mode:multiply;" if l["multiply"] else "")
-        + '"></div>'
-        for l in wash["layers"]
-    )
-    paper = wash.get("paper", "#FFFDF9")
-
-    esc = html.escape
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{esc(title or 'A poem')}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
-<style>
-  * {{ box-sizing: border-box; }}
-  html, body {{ margin: 0; background: {paper}; }}
-  .sheet {{
-    position: relative; min-height: 100vh; background: {paper}; color: #241F1A;
-    font-family: 'Instrument Sans', -apple-system, sans-serif; overflow: hidden;
-  }}
-  .lyr {{ position: absolute; inset: 0; pointer-events: none; }}
-  /* The gutters live in a table head and foot because Chrome repeats those on
-     every printed page — padding on the content block only applies once, which
-     is why continuation pages used to start hard against the paper edge. */
-  .page {{ position: relative; width: 100%; border-collapse: collapse; }}
-  .col {{ vertical-align: top; padding: 0 56px; }}
-  .gut-top {{ height: 96px; }}
-  .gut-bot {{ height: 120px; }}
-  .inner {{ position: relative; max-width: 760px; margin: 0 auto;
-            display: flex; flex-direction: column; gap: 40px; }}
-  .mark {{ display: flex; align-items: center; gap: 11px; }}
-  .mark svg {{ width: 20px; height: 20px; color: #8A5A34; }}
-  .label {{ font: 11px/1 'IBM Plex Mono', monospace; letter-spacing: .14em;
-            text-transform: uppercase; color: #6E645A; }}
-  h1 {{ font: 400 clamp(38px, 5vw, 54px)/1.1 'Newsreader', Georgia, serif;
-        letter-spacing: -.02em; margin: 0; text-wrap: pretty; }}
-  .verse {{ font: clamp(19px, 2.1vw, 23px)/1.78 'Newsreader', Georgia, serif;
-            white-space: pre-line; margin: 0; text-wrap: pretty; }}
-  .foot {{ display: flex; align-items: center; gap: 10px; padding-top: 8px;
-           border-top: 1px solid rgba(36,31,26,.14); }}
-  .foot svg {{ width: 15px; height: 15px; color: #8A5A34; stroke: currentColor;
-               fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }}
-  @page {{
-    size: A4;
-    /* Zero, so the wash reaches the paper edge — Chrome clips fixed elements to
-       the page content box, so any @page margin would frame it in white.
-       The text keeps its margins via the repeating gutters instead. */
-    margin: 0;
-  }}
-  @media print {{
-    html, body, .sheet {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-    /* Fixed, not absolute: Chrome repeats fixed layers on every page, where an
-       absolute one stops with the content and leaves later pages bare. */
-    .lyr {{ position: fixed; }}
-    .col {{ padding: 0 18mm; }}
-    .gut-top {{ height: 20mm; }}
-    .gut-bot {{ height: 16mm; }}
-    .inner {{ max-width: none; gap: 34px; }}
-    h1 {{ font-size: 38px; }}
-    .verse {{ font-size: 17.5px; line-height: 1.72; orphans: 3; widows: 3; }}
-    .mark, .foot {{ break-inside: avoid; }}
-  }}
-</style>
-</head>
-<body>
-<div class="sheet">
-  {layers}
-  <table class="page">
-  <thead><tr><td><div class="gut-top"></div></td></tr></thead>
-  <tfoot><tr><td><div class="gut-bot"></div></td></tr></tfoot>
-  <tbody><tr><td class="col">
-  <div class="inner">
-    <div class="mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">{QUILL_PATHS}</svg>
-      <span class="label">Mr. Meter</span>
-    </div>
-    <h1>{esc(title.lstrip("# ").strip())}</h1>
-    <p class="verse">{_verse_html(body)}</p>
-    <div class="foot">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5a4 4 0 0 1 0 5"/></svg>
-      <span class="label">{esc(caption)}</span>
-    </div>
-  </div>
-  </td></tr></tbody>
-  </table>
-</div>
-<script>
-  // Tell the embedder when the fonts have landed; printing before they do gets
-  // you a fallback serif. The page that embeds this decides when to print.
-  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {{
-    window.__cardReady = true;
-    try {{ parent.postMessage('card-ready', '*'); }} catch (e) {{}}
-  }});
-</script>
-</body>
-</html>
-"""
-
-
-def _hexes(values, fallback):
-    """Keep only well-formed hex colours; fall back if the model got creative."""
-    ok = [v for v in values if isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)]
-    return ok or fallback
 
 
 def session_wash(session):
-    """The painting for this poem, made once and kept.
+    """The picture for this poem, art-directed and painted once, then kept.
 
-    Without the cache the preview and the download would be different paintings,
-    since each call composes it afresh.
+    Without the cache the preview and the download would be different pictures.
+    The lock makes a second caller (the preview, a double-click, the prefetch
+    still running) wait for the first instead of painting a rival picture.
+
+    A fallback is not kept: one timeout shouldn't fix the plain picture to the
+    poem for good, so the next request tries again.
     """
-    if session.wash is None:
-        session.wash = design_wash(f"{session.title}\n\n{session.poem}")
-    return session.wash
+    with session.wash_lock:
+        if session.wash is None:
+            text = f"{session.title}\n\n{session.poem}"
+            art = wash.direct(client, text)
+            art["seed"] = wash.seed_for(text)
+            if art.get("why") == "fallback":
+                return art
+            art["image"] = wash.paint(art)
+            if art["image"] is None and os.environ.get("OPENAI_API_KEY"):
+                return art   # painting failed; draw this time, try again next
+            session.wash = art
+        return session.wash
 
 
-def _num(value, low, high, fallback):
-    try:
-        return max(low, min(high, float(value)))
-    except (TypeError, ValueError):
-        return fallback
+def prefetch_wash(session):
+    """Start painting as soon as the poem exists.
 
-
-def _clean_layer(raw):
-    """Keep a layer only if its colour is usable; clamp everything else."""
-    colour = raw.get("color")
-    if not (isinstance(colour, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", colour)):
-        return None
-    return {
-        "color": colour,
-        "opacity": _num(raw.get("opacity"), 0.04, 0.8, 0.3),
-        "x": _num(raw.get("x"), -40, 140, 50),
-        "y": _num(raw.get("y"), -40, 140, 50),
-        "width": _num(raw.get("width"), 120, 2000, 800),
-        "height": _num(raw.get("height"), 90, 1600, 480),
-        "blur": _num(raw.get("blur"), 0, 90, 40),
-        "multiply": bool(raw.get("multiply")),
-    }
-
-
-def design_wash(text):
-    """Ask for a watercolour composed for this poem. Never raises."""
-    try:
-        msg = client.messages.create(
-            model=WASH_MODEL,
-            max_tokens=1200,
-            system=WASH_PROMPT,
-            messages=[{"role": "user", "content": text}],
-            output_config={"format": {"type": "json_schema", "schema": WASH_SCHEMA}},
-        )
-        data = json.loads("".join(b.text for b in msg.content if b.type == "text"))
-    except (anthropic.APIError, json.JSONDecodeError, ValueError):
-        return dict(FALLBACK_WASH)
-
-    layers = [c for c in (_clean_layer(l) for l in (data.get("layers") or [])[:9]) if c]
-    if not layers:
-        return dict(FALLBACK_WASH)
-
-    # Left alone, it reaches for very thin paint and the wash disappears on
-    # off-white paper. Scaling by the strongest layer keeps whatever balance it
-    # composed — which pool dominates, which are faint — and only lifts the
-    # whole painting until it registers.
-    strongest = max(l["opacity"] for l in layers)
-    if strongest < 0.42:
-        lift = 0.42 / strongest
-        for l in layers:
-            l["opacity"] = round(min(0.8, l["opacity"] * lift), 3)
-    paper = data.get("paper")
-    if not (isinstance(paper, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", paper)):
-        paper = FALLBACK_WASH["paper"]
-    return {
-        "mood": (data.get("mood") or "").strip()[:40] or FALLBACK_WASH["mood"],
-        "paper": paper,
-        "layers": layers,
-    }
+    Painting takes 20-30 s. Started here, it is usually done by the time anyone
+    reads the poem and clicks Download, instead of starting on the click.
+    """
+    threading.Thread(target=session_wash, args=(session,), daemon=True).start()
 
 
 class CardIn(BaseModel):
@@ -806,11 +553,10 @@ def poem_card(body: CardIn):
     if not session.poem:
         raise HTTPException(status_code=409, detail="no poem yet")
 
-    wash = session_wash(session)
+    art = session_wash(session)
     subject = (session.answers.get("subject") or "").strip()
     caption = f"written for {subject}" if subject else "written by Mr. Meter"
-    return {"html": render_card(session.title, session.poem, wash, caption),
-            "wash": wash}
+    return {"html": render_card(session.title, session.poem, art, caption)}
 
 
 @app.get("/poem-card/preview")
@@ -819,10 +565,10 @@ def poem_card_preview(session_id: str):
     session = get_session(session_id)
     if not session.poem:
         raise HTTPException(status_code=409, detail="no poem yet")
-    wash = session_wash(session)
+    art = session_wash(session)
     subject = (session.answers.get("subject") or "").strip()
     caption = f"written for {subject}" if subject else "written by Mr. Meter"
-    page = render_card(session.title, session.poem, wash, caption)
+    page = render_card(session.title, session.poem, art, caption)
     return HTMLResponse(page, headers=NO_STORE)
 
 
