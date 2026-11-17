@@ -420,8 +420,8 @@ def render_card(title, body, art, caption):
     position: relative; min-height: 100vh; background: {paper}; color: {t['ink']};
     font-family: 'Instrument Sans', -apple-system, sans-serif; overflow: hidden;
   }}
-  .lyr {{ position: absolute; inset: 0; pointer-events: none; }}
-  .lyr {{ background-size: 100% auto; background-repeat: repeat-y; }}
+  .lyr {{ position: absolute; inset: 0; pointer-events: none;
+          background-size: 100% auto; background-repeat: repeat-y; }}
   /* The gutters live in a table head and foot because Chrome repeats those on
      every printed page — padding on the content block only applies once, which
      is why continuation pages used to start hard against the paper edge. */

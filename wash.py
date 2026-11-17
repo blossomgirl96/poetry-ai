@@ -192,17 +192,23 @@ def _clamp(v, lo, hi, fallback):
 # ── art direction ────────────────────────────────────────────────────────────
 
 def clean(data):
-    """Clamp whatever came back into something every renderer can draw."""
+    """Clamp whatever came back into something every renderer can draw.
+
+    Never raises: a fallback model isn't bound by the schema, so nothing about
+    the shape is trusted.
+    """
+    data = data if isinstance(data, dict) else {}
+    images = [i for i in data.get("images") or [] if isinstance(i, dict)][:4]
+    is_hex = lambda c: isinstance(c, str) and _HEX_RE.fullmatch(c)
     style = data.get("style") if data.get("style") in STYLES else FALLBACK["style"]
-    colors = [c for c in (data.get("colors") or []) if isinstance(c, str) and _HEX_RE.fullmatch(c)]
-    colors = colors[:5] or [i["color"] for i in data.get("images") or []
-                            if isinstance(i.get("color"), str) and _HEX_RE.fullmatch(i["color"])][:5]
+    colors = ([c for c in data.get("colors") or [] if is_hex(c)]
+              or [i["color"] for i in images if is_hex(i.get("color"))])[:5]
     if not colors:
         colors = list(FALLBACK["colors"])
     if len(colors) == 1:
         colors.append(_mix(colors[0], "#FFFFFF", .45))
     paper = data.get("paper")
-    if not (isinstance(paper, str) and _HEX_RE.fullmatch(paper)):
+    if not is_hex(paper):
         paper = "#121628" if style == "night" else "#1C3B6B" if style == "photogram" else FALLBACK["paper"]
     # These two only work dark; the rest only work light. Correct a mismatch
     # rather than print white text on white or black on navy.
@@ -214,8 +220,7 @@ def clean(data):
         "style": style,
         "why": str(data.get("why") or "")[:300],
         "mood": str(data.get("mood") or "")[:60] or "quiet",
-        "images": [{"image": str(i.get("image", ""))[:60], "color": i.get("color")}
-                   for i in (data.get("images") or [])[:4] if isinstance(i, dict)],
+        "images": [{"image": str(i.get("image", ""))[:60], "color": i.get("color")} for i in images],
         "colors": colors,
         "paper": paper.upper(),
         "focus_x": _clamp(data.get("focus_x"), 0, 100, 70),
@@ -291,6 +296,20 @@ def paint(art):
     return f"data:image/jpeg;base64,{b64}"
 
 
+# Where the poem sits, as a fraction of the sheet's width. In print the column
+# runs 18 mm to 192 mm of 210 mm; both veils fade across all of it, so the ends
+# of long lines aren't left on full-strength picture.
+COLUMN = (.08, .92)
+
+
+def _aside(x):
+    """Move a sun or moon (x in 0–100) to the right edge, off the poem.
+
+    Lines are left-aligned, so the right edge is the side they rarely reach.
+    """
+    return max(x, 86) / 100 * W
+
+
 def text_theme(ground):
     """Ink colours that read on a sheet of this colour."""
     if _lum(ground) < .2:
@@ -306,7 +325,8 @@ def veil_css(paper):
     """
     r, g, b = (round(c * 255) for c in _rgb(paper))
     c = lambda a: f"rgba({r},{g},{b},{a})"
-    return (f"linear-gradient(90deg,{c(0)} 0%,{c(.62)} 9%,{c(.62)} 80%,{c(0)} 96%)")
+    lo, hi = (round(f * 100) for f in COLUMN)
+    return f"linear-gradient(90deg,{c(0)} 0%,{c(.62)} {lo}%,{c(.62)} {hi}%,{c(0)} 100%)"
 
 
 # ── geometry ─────────────────────────────────────────────────────────────────
@@ -354,7 +374,8 @@ def _bleed(fid, seed, freq, scale, blur):
 
 
 # ── the renderers ────────────────────────────────────────────────────────────
-# Each returns (defs, body, paper_override_or_None).
+# Each returns (defs, body, ground): ground is the colour the text sits on when
+# it isn't the paper (horizon paints over the paper), else None.
 
 def _watercolour(rng, art, seed):
     defs = [_bleed("wet", seed, .012, 70, 9), _bleed("edge", seed + 1, .02, 50, 2.5)]
@@ -395,10 +416,10 @@ def _ink(rng, art, seed):
         dots.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{rng.paretovariate(2.2) * 2.2:.1f}" '
                     f'fill="{ink}" opacity="{rng.uniform(.4, .85):.2f}"/>')
     body.append(f'<g filter="url(#feather)">{"".join(dots)}</g>')
-    if len(art["colors"]) > 1:   # one wash of the second colour, faint, under it
-        cx, cy = _around(rng, art, .1)
-        d = _blob(rng, cx, cy, .3 * W, .22 * W, wobble=.2)
-        body.insert(0, f'<path d="{d}" fill="{art["colors"][1]}" opacity="{.12 + art["intensity"] * .15:.2f}" filter="url(#soak)"/>')
+    # One faint wash of the second colour, under the ink.
+    cx, cy = _around(rng, art, .1)
+    d = _blob(rng, cx, cy, .3 * W, .22 * W, wobble=.2)
+    body.insert(0, f'<path d="{d}" fill="{art["colors"][1]}" opacity="{.12 + art["intensity"] * .15:.2f}" filter="url(#soak)"/>')
     return defs, body, None
 
 
@@ -435,32 +456,39 @@ def _colourfield(rng, art, seed):
     return defs, body, None
 
 
+def _readable(c, dark):
+    """Mix a colour away from mid-grey until the chosen ink reads on it at 4.5:1."""
+    target, ok = ("#0A0D18", lambda h: _lum(h) <= .06) if dark else ("#FFFFFF", lambda h: _lum(h) >= .3)
+    t = 0
+    while not ok(_mix(c, target, t)):
+        t += .1
+    return _mix(c, target, t)
+
+
 def _horizon(rng, art, seed):
     cols = art["colors"]
-    # Push the sky to one side of mid-grey so the poem reads on it: a light sky
-    # gets lighter, a dark one darker. Mid-tones fail with either ink.
+    # Light or dark is decided once, here, and every colour behind the text —
+    # sky stops and land — is pushed far enough that way for its ink to read.
     dark = sum(_lum(c) for c in cols) / len(cols) < .18
-    target = "#0A0D18" if dark else "#FFFFFF"
-    sky = [_mix(c, target, .55 if dark else .5) for c in cols]
-    stops = "".join(f'<stop offset="{i / max(1, len(sky) - 1):.2f}" stop-color="{c}"/>'
+    sky = [_readable(c, dark) for c in cols]
+    stops = "".join(f'<stop offset="{i / (len(sky) - 1):.2f}" stop-color="{c}"/>'
                     for i, c in enumerate(sky))
     hy = (.55 + art["focus_y"] / 100 * .3) * H
     defs = [f'<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">{stops}</linearGradient>',
             _bleed("haze", seed, .006, 30, 16), _bleed("glow", seed + 2, .01, 10, 30)]
     body = [f'<rect width="{W}" height="{H}" fill="url(#sky)"/>']
-    land = _mix(cols[-1], target, .25 if dark else .2)
+    land = _readable(cols[-1], dark)
     pts = [(-50, hy)] + [(x, hy + rng.gauss(0, 8 + art["density"] * 24))
                          for x in range(0, W + 100, 100)] + [(W + 50, hy)]
     ridge = "M" + " L".join(f"{x:.0f},{y:.0f}" for x, y in pts) + f" L{W + 50},{H + 50} L-50,{H + 50}Z"
     body.append(f'<path d="{ridge}" fill="{land}" opacity="{.35 + art["intensity"] * .35:.2f}" filter="url(#haze)"/>')
     if art["feature"]:
-        # The poem runs down the middle, so the sun sits out to one side.
-        sx = (min(art["focus_x"], 16) if art["focus_x"] < 50 else max(art["focus_x"], 84)) / 100 * W
-        sy = hy - rng.uniform(.06, .2) * H
-        disc = _mix(cols[0] if dark else cols[min(1, len(cols) - 1)], "#FFFFFF", .5 if dark else 0)
+        sx, sy = _aside(art["focus_x"]), hy - rng.uniform(.06, .2) * H
+        disc = _mix(cols[0], "#FFFFFF", .5) if dark else cols[1]
         body.append(f'<circle cx="{sx:.0f}" cy="{sy:.0f}" r="150" fill="{disc}" opacity=".35" filter="url(#glow)"/>')
         body.append(f'<circle cx="{sx:.0f}" cy="{sy:.0f}" r="{46 + art["intensity"] * 30:.0f}" fill="{disc}" opacity=".85"/>')
-    return defs, body, sky[len(sky) // 2]
+    # The ground the text sits on is whichever end of the scale was chosen.
+    return defs, body, "#0A0D18" if dark else "#FFFFFF"
 
 
 def _contour(rng, art, seed):
@@ -483,8 +511,7 @@ def _contour(rng, art, seed):
 
 
 def _riso(rng, art, seed):
-    c1 = art["colors"][0]
-    c2 = art["colors"][1 % len(art["colors"])]
+    c1, c2 = art["colors"][:2]
     defs = [f'<pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(22)">'
             f'<circle cx="4.5" cy="4.5" r="2.4" fill="{c2}"/></pattern>',
             _bleed("rough", seed, .9, 3, .3)]
@@ -527,7 +554,7 @@ def _night(rng, art, seed):
         r = rng.paretovariate(3) * .7
         body.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="{r:.2f}" fill="#FFF8EA" opacity="{rng.uniform(.25, .9):.2f}"/>')
     if art["feature"]:
-        mx, my = art["focus_x"] / 100 * W, art["focus_y"] / 100 * H
+        mx, my = _aside(art["focus_x"]), art["focus_y"] / 100 * H
         defs.append(f'<mask id="crescent"><rect width="{W}" height="{H}" fill="#fff"/>'
                     f'<circle cx="{mx + 26:.0f}" cy="{my - 14:.0f}" r="58" fill="#000"/></mask>')
         body.append(f'<circle cx="{mx:.0f}" cy="{my:.0f}" r="130" fill="#FFF3D6" opacity=".08" filter="url(#nebula)"/>')
@@ -571,8 +598,8 @@ def _veil(strength):
         return "", ""
     v = f"{round(strength * 255):02X}" * 3
     return (f'<linearGradient id="vg" x1="0" y1="0" x2="1" y2="0">'
-            f'<stop offset="0" stop-color="#FFFFFF"/><stop offset=".1" stop-color="#{v}"/>'
-            f'<stop offset=".72" stop-color="#{v}"/><stop offset=".9" stop-color="#FFFFFF"/>'
+            f'<stop offset="0" stop-color="#FFFFFF"/><stop offset="{COLUMN[0]}" stop-color="#{v}"/>'
+            f'<stop offset="{COLUMN[1]}" stop-color="#{v}"/><stop offset="1" stop-color="#FFFFFF"/>'
             f'</linearGradient><mask id="veil" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}">'
             f'<rect width="{W}" height="{H}" fill="url(#vg)"/></mask>'), ' mask="url(#veil)"'
 
@@ -593,12 +620,10 @@ def render(art, seed):
     rng = random.Random(seed)
     defs, body, behind_text = RENDERERS[art["style"]](rng, art, seed % 997)
     paper = art["paper"]
-    ground = behind_text or paper
-    dark = _lum(ground) < .2
     vdef, vattr = _veil(VEIL[art["style"]])
     svg = (f'<svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice" '
            f'aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'
            f'<defs>{"".join(defs)}{vdef}</defs>'
            f'<rect width="{W}" height="{H}" fill="{paper}"/>'
            f'<g{vattr}>{"".join(body)}</g></svg>')
-    return svg, paper, text_theme(ground)
+    return svg, paper, text_theme(behind_text or paper)
