@@ -93,12 +93,18 @@
   @keyframes d { 0% { content: "" } 25% { content: "." } 50% { content: ".." } 75% { content: "..." } }
   footer { flex: none; border-top: 1px solid var(--rule); padding: 12px 20px 18px; }
   .row { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
-  textarea {
-    flex: 1; resize: none; font: inherit; color: inherit; background: var(--bubble);
-    border: 1px solid var(--rule); border-radius: 14px; padding: 10px 12px;
-    max-height: 140px; min-height: 42px;
+  /* The box is the visible field: text scrolls in the top section, the mic sits
+     on its own bar below, so the scrollbar never runs under it. */
+  .box {
+    flex: 1; display: flex; flex-direction: column; background: var(--bubble);
+    border: 1px solid var(--rule); border-radius: 14px; overflow: hidden;
   }
-  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .box:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+  textarea {
+    flex: none; resize: none; font: inherit; color: inherit; background: transparent;
+    border: 0; outline: 0; padding: 10px 12px 4px;
+    max-height: 140px; min-height: 40px;
+  }
   button {
     font: inherit; border: 1px solid var(--rule); background: var(--bubble); color: inherit;
     border-radius: 999px; padding: 10px 18px; cursor: pointer; white-space: nowrap;
@@ -108,6 +114,10 @@
   button.icon { padding: 9px 11px; line-height: 0; }
   button.icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none;
                     stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .tools { display: flex; justify-content: flex-end; padding: 0 6px 6px; }
+  #mic { padding: 7px; border-color: transparent;
+         background: transparent; color: var(--ink); }
+  #mic:hover:not(:disabled) { color: var(--accent); }
   #mic.live { background: var(--accent); border-color: var(--accent); color: #fff; }
   #mic.live svg { animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .35 } }
@@ -129,10 +139,14 @@
 
 <footer>
   <div class="row">
-    <button id="mic" class="icon" title="Speak" disabled>
-      <svg viewBox="0 0 24 24"><path d="M12 3a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-5 0v-5A2.5 2.5 0 0 1 12 3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3"/></svg>
-    </button>
-    <textarea id="input" rows="1" placeholder="Say hello..." disabled></textarea>
+    <div class="box">
+      <textarea id="input" rows="1" placeholder="Say hello..." disabled></textarea>
+      <div class="tools">
+      <button id="mic" class="icon" title="Dictate" aria-label="Dictate" disabled>
+        <svg viewBox="0 0 24 24"><path d="M12 3a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-5 0v-5A2.5 2.5 0 0 1 12 3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3"/></svg>
+      </button>
+      </div>
+    </div>
     <button id="send" class="primary" disabled>Send</button>
     <button id="write" title="Skip ahead and write the poem now" disabled>Write it now</button>
   </div>
@@ -804,7 +818,7 @@ function stopListening(andSend) {
   wantStop = true;
   sendOnEnd = !!andSend;
   micBtn.classList.remove('live');
-  micBtn.title = 'Speak';
+  micBtn.title = 'Dictate'; micBtn.setAttribute('aria-label', 'Dictate');
   input.placeholder = 'Type a message, or tap the mic...';
   try {
     recog.stop();
@@ -861,7 +875,7 @@ function toggleMic() {
   input.value = '';
   listening = true;
   micBtn.classList.add('live');
-  micBtn.title = 'Done talking';
+  micBtn.title = 'Stop dictation'; micBtn.setAttribute('aria-label', 'Stop dictation');
   input.placeholder = 'Listening — take your time, tap the mic when you are done';
   startRecog();
 }
