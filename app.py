@@ -22,6 +22,7 @@ import anthropic
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import poem
@@ -67,6 +68,9 @@ The transcript arrives inside <transcript> tags. Output only the corrected text,
 with no tags and nothing else."""
 
 app = FastAPI()
+# The home page's watercolours. The two pages stay single hand-edited files;
+# only images live here.
+app.mount("/static/img", StaticFiles(directory=os.path.join(BASE_DIR, "static", "img")), name="img")
 client = anthropic.Anthropic()
 
 

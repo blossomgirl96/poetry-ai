@@ -3,142 +3,173 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mr. Meter — a poem for someone you like</title>
+<title>Mr. Meter — commission a poem for someone you love</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; background: #FBF6EE; }
-  a { color: #8A5A34; text-decoration: none; }
-  a:hover { color: #6D461F; }
-  @media (max-width: 640px) {
-    /* the design's 48px gutters are generous for a phone */
-    [style*="padding: 22px 48px"], [style*="padding: 64px 48px 88px"],
-    [style*="padding: 84px 48px"] { padding-left: 22px !important; padding-right: 22px !important; }
+  /* The poet's studio: a pink plaster wall of framed poems, then warm paper,
+     ochre gold for anything you can press, ultramarine to close. */
+  :root {
+    --wall: #E5BDAE;
+    --paper: #F4ECE0;
+    --ink: #1C1F33;
+    --muted: #5F5967;
+    --gold: #B5852F;
+    --gold-dark: #94681E;
+    --navy: #131D46;
+    --rule: #E3D4C2;
+    --voice: 'Newsreader', Georgia, serif;
+    --ui: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--ui); }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; height: auto; }
+
+  .btn {
+    display: inline-block; font: 500 17px var(--ui); padding: 14px 30px; border-radius: 6px;
+    background: var(--gold); color: #fff; box-shadow: 0 2px 0 var(--gold-dark);
+  }
+  .btn:hover { background: var(--gold-dark); }
+
+  /* ---- cover: the gallery wall ---- */
+  .hero { position: relative; background: var(--wall); }
+  .bar {
+    display: flex; align-items: center; gap: 32px; padding: 22px 40px;
+    font-size: 17px;
+  }
+  .bar .logo { font: 400 28px var(--voice); letter-spacing: -.01em; margin-right: auto; }
+  .bar a:not(.logo):hover { text-decoration: underline; text-underline-offset: 4px; }
+  .lede { display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; padding: 6px 22px 0; }
+  .lede h1 {
+    font: 400 clamp(38px, 4.4vw, 76px)/1.04 var(--voice); letter-spacing: -.02em;
+    margin: 0; max-width: 11em; text-wrap: balance;
+  }
+  /* The painting's top third is bare wall, so on wide screens the words sit on it.
+     Narrower, they stack above it and the painting's top edge fades into the wall. */
+  .wall { width: 100%; -webkit-mask-image: linear-gradient(transparent, #000 14%); mask-image: linear-gradient(transparent, #000 14%); }
+  @media (min-width: 1100px) {
+    .top { position: absolute; inset: 0 0 auto 0; height: 33%; display: flex; flex-direction: column; }
+    .lede { flex: 1; justify-content: center; padding-bottom: 1.5vw; }
+    .wall { -webkit-mask-image: none; mask-image: none; }
+  }
+  @media (max-width: 640px) {
+    .bar { padding: 16px 20px; gap: 18px; font-size: 15px; }
+    .bar .logo { font-size: 23px; }
+  }
+
+  /* ---- meet him ---- */
+  .meet { max-width: 1060px; margin: 0 auto; padding: 72px 40px 80px; }
+  .label { display: block; text-align: center; font: 600 12px var(--ui); letter-spacing: .22em; text-transform: uppercase; color: var(--gold-dark); }
+  .meet h2 { font: 400 clamp(28px, 3.2vw, 42px)/1.15 var(--voice); text-align: center; margin: 10px 0 40px; text-wrap: balance; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 32px; }
+  .steps figure { margin: 0; text-align: center; }
+  .steps img { width: 100%; box-shadow: 0 8px 18px rgba(70, 45, 20, .16); }
+  .steps h3 { font: 400 23px var(--voice); margin: 18px 0 4px; }
+  .steps p { margin: 0; color: var(--muted); font-family: var(--voice); font-size: 17px; line-height: 1.5; }
+
+  /* one real exchange and what came of it, in a gold frame */
+  .example {
+    margin-top: 64px; display: grid; grid-template-columns: 1fr 1fr;
+    border: 10px solid #B8892F;
+    border-image: linear-gradient(135deg, #8C6420, #E6C67E 28%, #A77A28 52%, #E9CD88 78%, #8C6420) 1;
+    box-shadow: 0 10px 24px rgba(70, 45, 20, .18), inset 0 0 0 1px rgba(80, 50, 10, .25);
+    background: #F7F1E6;
+  }
+  .talk { padding: 40px 32px; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+  .say { display: flex; align-items: flex-start; gap: 10px; max-width: 92%; }
+  .say p { margin: 0; padding: 12px 16px; border-radius: 14px; font-family: var(--voice); font-size: 17px; line-height: 1.45; }
+  .say.him p { background: #F1E3C8; border: 1px solid #E0CBA2; border-top-left-radius: 4px; }
+  .say.you { align-self: flex-end; }
+  .say.you p { background: #D5DDEC; border: 1px solid #BFCADF; border-bottom-right-radius: 4px; }
+  .m { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font: 400 17px var(--voice); }
+  .honey { background: linear-gradient(140deg, #EBC77D, #F3DDA9 45%, #E8BF6C); padding: 32px; display: grid; place-items: center; }
+  .card {
+    width: 100%; max-width: 380px; padding: 30px 34px; background: url(/static/img/card.jpg) center / cover;
+    box-shadow: 0 6px 16px rgba(90, 60, 10, .22); font-family: var(--voice);
+  }
+  .card h4 { font: 400 22px var(--voice); margin: 0 0 14px; }
+  .card p { margin: 0; font-size: 17px; line-height: 1.75; }
+  @media (max-width: 760px) {
+    .meet { padding: 56px 20px 64px; }
+    .example { grid-template-columns: 1fr; }
+    .talk { padding: 28px 20px; }
+    .honey { padding: 20px 14px; }
+    .card { padding: 24px 20px; }
+    .card p { font-size: 15.5px; line-height: 1.7; }
+  }
+
+  /* ---- close ---- */
+  .close { background: var(--navy); color: #F4ECE0; text-align: center; padding: 56px 24px 52px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .close h2 { font: 400 clamp(26px, 2.8vw, 36px)/1.2 var(--voice); margin: 0; }
+  .close small { font-size: 15px; opacity: .8; }
 </style>
 </head>
 <body>
-<div style="background: #FBF6EE; color: #241F1A; font-family: 'Instrument Sans', -apple-system, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh;">
 
-  <div style="max-width: 1200px; margin: 0 auto; padding: 22px 48px; display: flex; align-items: center; gap: 12px;">
-    <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; color: #8A5A34;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
-    <span style="font-family: 'Newsreader', Georgia, serif; font-size: 20px;">Mr. Meter</span>
-    <div style="flex: 1;"></div>
-    <a href="#meet" style="font-size: 15px; color: #6E645A;">Meet him</a>
-    <a href="/chat" style="font: 500 15px 'Instrument Sans', sans-serif; border: 1px solid #E8DFD1; background: #FFFDF9; color: #241F1A; border-radius: 999px; padding: 10px 20px; margin-left: 22px;">Talk to Mr. Meter</a>
-  </div>
-
-  <div style="max-width: 1200px; margin: 0 auto; padding: 64px 48px 88px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 64px; align-items: center;">
-    <div style="display: flex; flex-direction: column; gap: 26px;">
-      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #90514C;">A poem for someone you like</span>
-      <h1 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(40px, 5.2vw, 66px); line-height: 1.05; letter-spacing: -0.02em; margin: 0; text-wrap: pretty;">A few questions, and then a poem in your hands.</h1>
-      <p style="margin: 0; font-size: 20px; line-height: 1.55; color: #6E645A; max-width: 40ch; text-wrap: pretty;">Mr. Meter wants to hear about your person — your mother, your oldest friend, whoever it is. Answer the way you'd talk. He does the rest, out loud.</p>
-      <div style="display: flex; flex-direction: column; gap: 14px; align-items: flex-start; margin-top: 4px;">
-        <a href="/chat" style="font: 500 17px 'Instrument Sans', sans-serif; border: 1px solid #8A5A34; background: #8A5A34; color: #FFFDF9; border-radius: 999px; padding: 16px 32px;">Start a conversation</a>
-      </div>
-    </div>
-
-    <div style="background: #FFFDF9; border: 1px solid #E8DFD1; border-radius: 18px; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 12px;">
-      <div style="display: flex; align-items: flex-end; gap: 9px;">
-        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #FFFDF9; border: 1px solid #E8DFD1; color: #8A5A34;">
-          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
-        </div>
-        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #FBF6EE; border: 1px solid #E8DFD1; border-bottom-left-radius: 4px; font-size: 15px;">Hello, I'm Mr. Meter. Who shall we write this poem for?</div>
-      </div>
-      <div style="display: flex; align-items: flex-end; gap: 9px; flex-direction: row-reverse;">
-        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #E8DFD1; color: #6E645A;">
-          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><circle cx="12" cy="8.4" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M4.6 20c.9-3.9 4-6.1 7.4-6.1s6.5 2.2 7.4 6.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
-        </div>
-        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #8A5A34; color: #FFFDF9; border-bottom-right-radius: 4px; font-size: 15px;">My mother. It's her birthday on Sunday.</div>
-      </div>
-      <div style="display: flex; align-items: flex-end; gap: 9px;">
-        <div style="flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #FFFDF9; border: 1px solid #E8DFD1; color: #8A5A34;">
-          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px; display: block;"><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="currentColor" opacity=".13"></path><path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"></path><path d="M4.6 19.6 12 12.2" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"></path></svg>
-        </div>
-        <div style="max-width: 82%; padding: 10px 14px; border-radius: 14px; background: #FBF6EE; border: 1px solid #E8DFD1; border-bottom-left-radius: 4px; font-size: 15px;">What does her voice do when she's pleased about something?</div>
-      </div>
-      
-        <div style="border-top: 1px solid #E8DFD1; margin-top: 8px; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 20px;">Onam, and the Sky Not Holding</span>
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 17px; line-height: 1.75; white-space: pre-line;">…and I stood there
-with my sandals full of water,
-watching you not hurry.
-
-The bag stayed dry.
-We didn't.
-I'd go again tomorrow.</span>
-          <div style="display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #6E645A;">
-            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: #8A5A34;"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 9.5a4 4 0 0 1 0 5"></path></svg>
-            <span>speaking, stanza by stanza</span>
-          </div>
-        </div>
-      
+<header class="hero">
+  <div class="top">
+    <nav class="bar">
+      <a class="logo" href="/">Mr. Meter</a>
+      <a href="#meet">Meet him</a>
+      <a href="/chat">Talk to Mr. Meter</a>
+    </nav>
+    <div class="lede">
+      <h1>Commission a poem for someone you love</h1>
+      <a class="btn" href="/chat">Step into the studio</a>
     </div>
   </div>
+  <img class="wall" src="/static/img/wall.jpg" width="1536" height="1024"
+       alt="A pink plaster wall hung with six framed watercolour poems: a teddy bear, a moonlit sea, a magnolia branch, green hills, a red kite and a rainy window.">
+</header>
 
-  <div id="meet" style="border-top: 1px solid #E8DFD1;">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 84px 48px; display: flex; flex-direction: column; gap: 40px;">
-      <div style="display: flex; flex-direction: column; gap: 16px; max-width: 60ch;">
-        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #90514C;">Meet Mr. Meter</span>
-        <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 46px; line-height: 1.1; margin: 0;">The kind of company who asks the right small question.</h2>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 26px;">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <div style="height: 170px; border-radius: 12px; border: 1px solid #E8DFD1; background: #FAF6EF; display: grid; place-items: center; color: #8A5A34; overflow: hidden;"><svg viewBox="0 0 170 118" style="width: 72%; max-width: 205px;" fill="none"
-  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M20 16h74a10 10 0 0 1 10 10v24a10 10 0 0 1-10 10H46L32 72V60H20a10 10 0 0 1-10-10V26a10 10 0 0 1 10-10z"
-    fill="currentColor" fill-opacity=".08"/>
-  <path d="M24 32h50M24 44h34" opacity=".45" stroke-width="1.35"/>
-  <path d="M76 56h74a10 10 0 0 1 10 10v22a10 10 0 0 1-10 10h-38l-14 12V98H76a10 10 0 0 1-10-10V66a10 10 0 0 1 10-10z"
-    fill="#FAF6EF"/>
-  <path d="M80 72h50M80 84h30" opacity=".45" stroke-width="1.35"/>
-</svg></div>
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 22px;">He talks, you talk</span>
-          <span style="font-size: 16px; line-height: 1.55; color: #6E645A;">One question at a time, never twice from the same angle. Type it or say it — he listens either way.</span>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <div style="height: 170px; border-radius: 12px; border: 1px solid #E8DFD1; background: #FAF6EF; display: grid; place-items: center; color: #8A5A34; overflow: hidden;"><svg viewBox="0 0 170 118" style="width: 72%; max-width: 205px;" fill="none"
-  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M40 12h90a8 8 0 0 1 8 8v78a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z"
-    fill="currentColor" fill-opacity=".06"/>
-  <g opacity=".55" stroke-width="1.3">
-    <path d="M44 34c5-4 9 4 14 0s9 4 14 0 9 4 14 0 9 4 14 0 9 4 14 0"/>
-    <path d="M44 52c5-4 9 4 14 0s9 4 14 0 9 4 14 0 9 4 14 0 9 4 14 0"/>
-    <path d="M44 70c5-4 9 4 14 0s9 4 14 0 9 4 14 0 9 4 14 0"/>
-    <path d="M44 88c5-4 9 4 14 0s9 4 14 0 9 4 14 0"/>
-  </g>
-</svg></div>
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 22px;">Your details, kept</span>
-          <span style="font-size: 16px; line-height: 1.55; color: #6E645A;">Free verse built from what you actually said. No greeting-card lines, no prettier substitutes.</span>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <div style="height: 170px; border-radius: 12px; border: 1px solid #E8DFD1; background: #FAF6EF; display: grid; place-items: center; color: #8A5A34; overflow: hidden;"><svg viewBox="0 0 170 118" style="width: 72%; max-width: 200px;" fill="none"
-  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <g transform="translate(24 28) scale(2.6)" stroke-width=".55">
-    <path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z"
-      fill="currentColor" opacity=".13" stroke="none"/>
-    <path d="M20 3.2c-7.2.4-12.3 4.7-14 11L4.2 20l5.4-1.9c6.3-2.2 10.2-7.4 10.4-14.9z"/>
-    <path d="M4.6 19.6 12 12.2"/>
-  </g>
-  <path d="M104 44a20 20 0 0 1 0 30" opacity=".85"/>
-  <path d="M118 34a34 34 0 0 1 0 50" opacity=".5"/>
-  <path d="M132 24a48 48 0 0 1 0 70" opacity=".25"/>
-</svg></div>
-          <span style="font-family: 'Newsreader', Georgia, serif; font-size: 22px;">Then he reads it</span>
-          <span style="font-size: 16px; line-height: 1.55; color: #6E645A;">Aloud, in his own voice, while it's still being written. Copy it, print it, hand it over.</span>
-        </div>
+<main class="meet" id="meet">
+  <span class="label">Meet Mr. Meter</span>
+  <h2>The kind of company who asks the right small question.</h2>
+
+  <div class="steps">
+    <figure>
+      <img src="/static/img/chat.jpg" width="900" height="600" alt="Two armchairs facing each other with a cup of tea between them.">
+      <h3>First, a little chat.</h3>
+      <p>A conversation about your subject</p>
+    </figure>
+    <figure>
+      <img src="/static/img/details.jpg" width="900" height="600" alt="An open notebook with a pressed blue flower.">
+      <h3>It's the little things.</h3>
+      <p>The details you share become<br>the heart of your poem.</p>
+    </figure>
+    <figure>
+      <img src="/static/img/poem.jpg" width="900" height="600" alt="A fountain pen resting on a handwritten page beside an ink pot.">
+      <h3>The poem.</h3>
+      <p>Hear it read aloud.<br>Keep it, print it, or pass it on.</p>
+    </figure>
+  </div>
+
+  <div class="example">
+    <div class="talk">
+      <div class="say him"><span class="m" aria-label="Mr. Meter">M</span><p>Does he still look the same, or has he earned a few scars along the way?</p></div>
+      <div class="say you"><p>My dogs have chewed him now and then, but not too shabby. He still looks handsome and cuddly.</p></div>
+    </div>
+    <div class="honey">
+      <div class="card">
+        <h4>Poo Bear, Ten Years In</h4>
+        <p>The dogs have had their turns with you,<br>
+        a seam gone soft at the shoulder.<br>
+        Not too shabby.<br>
+        You still look handsome.<br>
+        You still hold the shape of being held.</p>
       </div>
     </div>
   </div>
+</main>
 
-  <div style="background: #8A5A34; color: #FBF6EE; padding: 84px 48px; display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center;">
-    <h2 style="font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 48px; line-height: 1.1; margin: 0; max-width: 26ch;">Someone you like is about to get a poem.</h2>
-    <a href="/chat" style="font: 500 17px 'Instrument Sans', sans-serif; border: 1px solid #FBF6EE; background: #FBF6EE; color: #8A5A34; border-radius: 999px; padding: 16px 32px;">Talk to Mr. Meter</a>
-    
-      <span style="font-size: 15px; opacity: .8;">Your conversation isn't shared. Poems are yours to keep.</span>
-    
-  </div>
-</div>
+<footer class="close">
+  <h2>Someone you like is about to get a poem.</h2>
+  <a class="btn" href="/chat">Talk to Mr. Meter</a>
+  <small>Your conversation isn't shared. Poems are yours to keep.</small>
+</footer>
+
 </body>
 </html>
